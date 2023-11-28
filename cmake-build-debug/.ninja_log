@@ -1,0 +1,7 @@
+# ninja log v5
+6	191	7212266060000000	CMakeFiles/untitled.dir/main.c.obj	3e7b523df9e5a7e0
+81	169	7187431667076043	untitled.exe	be8f472a4dd9f571
+13	254	7212266060000000	CMakeFiles/untitled.dir/shell.c.obj	92233ba93d8ee070
+15	244	7223725840000000	CMakeFiles/untitled.dir/copia.c.obj	95f4eb33b723d789
+26	255	7223725840000000	CMakeFiles/untitled.dir/shell1.c.obj	faa2fb16c6cce400
+3	609	7229012500000000	build.ninja	7347b0a2f9dbf5df
