@@ -41,8 +41,7 @@ char path[MAX_COMMAND_LENGTH];
 int main (int argc, char *argv[]) {
     char *path;
 
-    printf("piribi \n");
-    printf("piribi \n");
+    printf("Print para debug 1\n");
 
     // Verificación de la cantidad de argumentos
     if (argc != 6) {
@@ -64,7 +63,7 @@ int main (int argc, char *argv[]) {
         return -1;
     }
     sprintf(path, "proveedor%d.dat", atoi(argv[2]));
-    printf("Waka");
+    printf("Print para debug 2\n");
 
     ProveedorData proveedor_data;
     proveedor_data.ruta = argv[1]; // Ruta de los archivos de entrada
@@ -73,8 +72,6 @@ int main (int argc, char *argv[]) {
     proveedor_data.C = atoi(argv[5]); // Número total de clientes
 
     proveedorFunc(&proveedor_data);
-
-    printf("Wak1a");
 
     return 0;
 }
