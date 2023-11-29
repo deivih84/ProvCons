@@ -1,13 +1,13 @@
 Proveedor: 1
-Productos Inválidos: 5
-Productos Válidos: 9. De los cuales se han insertado:
-3 de tipo "a".
-2 de tipo "b".
+Productos Inválidos: 43
+Productos Válidos: 25. De los cuales se han insertado:
+6 de tipo "a".
+3 de tipo "b".
 2 de tipo "c".
-2 de tipo "d".
+6 de tipo "d".
 0 de tipo "e".
 0 de tipo "f".
-0 de tipo "g".
-0 de tipo "h".
-0 de tipo "i".
-0 de tipo "j".
+2 de tipo "g".
+2 de tipo "h".
+1 de tipo "i".
+3 de tipo "j".
