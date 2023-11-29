@@ -1,10 +1,10 @@
 Proveedor: 1
-Productos Inválidos: 0
-Productos Válidos: 0. De los cuales se han insertado:
-0 de tipo "a".
-0 de tipo "b".
-0 de tipo "c".
-0 de tipo "d".
+Productos Inválidos: 5
+Productos Válidos: 9. De los cuales se han insertado:
+3 de tipo "a".
+2 de tipo "b".
+2 de tipo "c".
+2 de tipo "d".
 0 de tipo "e".
 0 de tipo "f".
 0 de tipo "g".

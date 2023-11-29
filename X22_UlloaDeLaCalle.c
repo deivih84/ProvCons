@@ -42,7 +42,7 @@ char path[MAX_COMMAND_LENGTH];
 int main (int argc, char *argv[]) {
     char *path = argv[1];
 
-    printf("Print para debug 1\n");
+    printf("Print para debug en main 1\n");
 
     // Verificación de la cantidad de argumentos
     if (argc != 6) {
@@ -88,12 +88,11 @@ void proveedorFunc(void *data) {
     TotalProductos totalProductos = {{0}};
 
     // Abrir el archivo de entrada del proveedor
-    sprintf(proveedor_data->ruta, "%sproveedor%d.dat", proveedor_data->ruta, proveedor_data->P);
     file = fopen(proveedor_data->ruta, "r");
 
     if (file == NULL) {
         fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", proveedor_data->P);
-    } else {printf("Fichero Abierto");}
+    }
 
     // Inicializar el búfer circular
     buffer = (Producto *)malloc(proveedor_data->T * sizeof(Producto));
