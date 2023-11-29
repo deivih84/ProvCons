@@ -7,5 +7,4 @@ add_executable(untitled
         copia.c
         shell.c
         X2_UlloaDeLaCalle.c
-        X2_UlloaDeLaCalleVERSION2.c
 )
