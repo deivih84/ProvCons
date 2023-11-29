@@ -17,6 +17,7 @@
 // Estructura para pasar datos al hilo del proveedor
 typedef struct {
     char *ruta;
+    char *fichDestino;
     int T;
     int P;
     int C;
@@ -66,10 +67,11 @@ int main (int argc, char *argv[]) {
     printf("%s\n", path);
 
     ProveedorData proveedor_data;
-    proveedor_data.ruta = argv[1]; // Ruta de los archivos de entrada
-    proveedor_data.T = atoi(argv[3]); // Tamaño del búfer circular
-    proveedor_data.P = atoi(argv[4]); // Número total de proveedores
-    proveedor_data.C = atoi(argv[5]); // Número total de clientes
+    proveedor_data.ruta = argv[1]; // Ruta de los archivos de entrada.
+    proveedor_data.fichDestino = argv[2]; // Nombre del fichero destino.
+    proveedor_data.T = atoi(argv[3]); // Tamaño del búfer circular.
+    proveedor_data.P = atoi(argv[4]); // Número total de proveedores.
+    proveedor_data.C = atoi(argv[5]); // Número total de clientes.
 
     proveedorFunc(&proveedor_data);
 
@@ -80,19 +82,18 @@ void proveedorFunc(void *data) {
     ProveedorData *proveedor_data = (ProveedorData *)data;
     FILE *file, *outputFile;
     Producto *buffer;
-    char outputFilename[MAX_COMMAND_LENGTH], filename[MAX_COMMAND_LENGTH];
     int in = 0, out = 0; // Índice de escritura y lectura en el búfer
     char c;
     int productosLeidos = 0, productosValidos = 0, productosInvalidos = 0;
     TotalProductos totalProductos = {{0}};
 
     // Abrir el archivo de entrada del proveedor
-    sprintf(filename, "%sproveedor%d.dat", proveedor_data->ruta, proveedor_data->P);
-    file = fopen(filename, "r");
+    sprintf(proveedor_data->ruta, "%sproveedor%d.dat", proveedor_data->ruta, proveedor_data->P);
+    file = fopen(proveedor_data->ruta, "r");
 
     if (file == NULL) {
         fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", proveedor_data->P);
-    }
+    } else {printf("Fichero Abierto");}
 
     // Inicializar el búfer circular
     buffer = (Producto *)malloc(proveedor_data->T * sizeof(Producto));
@@ -123,9 +124,8 @@ void proveedorFunc(void *data) {
     fclose(file); // Cerrar el archivo
 
     // Escribir resultados en el archivo de salida
-    sprintf(outputFilename, "output_proveedor%d.txt", proveedor_data->P);
 
-    outputFile = fopen(outputFilename, "w");
+    outputFile = fopen(proveedor_data->fichDestino, "w");
     if (outputFile == NULL) {
         fprintf(stderr, "Error al abrir el archivo de salida del proveedor %d.\n", proveedor_data->P);
         free(buffer);
@@ -143,7 +143,7 @@ void proveedorFunc(void *data) {
     // Cerrar el archivo de salida
     fclose(outputFile);
 
-    printf("Waka");
+    printf("Debug dentro de proveedorFunc");
 
     // Liberar memoria del búfer
     free(buffer);

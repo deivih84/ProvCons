@@ -1,0 +1,13 @@
+Proveedor: 1
+Productos Inválidos: 0
+Productos Válidos: 0. De los cuales se han insertado:
+0 de tipo "a".
+0 de tipo "b".
+0 de tipo "c".
+0 de tipo "d".
+0 de tipo "e".
+0 de tipo "f".
+0 de tipo "g".
+0 de tipo "h".
+0 de tipo "i".
+0 de tipo "j".
