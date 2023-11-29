@@ -202,8 +202,7 @@ void consumidorFunc(void *data) {
     for (int i = 0; i < sharedData->T * sizeof(Producto); ++i) {
         if (sharedData->buffer[i].proveedorID == sharedData->C) {
             fprintf(outputFile, "Producto tipo \"%c\": %d", sharedData->buffer[i].tipo, sharedData->buffer[i].proveedorID);
-
-
+            //Me he rayado, que identificador se supone que debe contar cada consumidor???? no entiendo ayuda
         }
     }
 
