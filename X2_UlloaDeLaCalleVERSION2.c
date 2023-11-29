@@ -29,6 +29,7 @@ typedef struct {
     sem_t sem_proveedor;  // Semáforo para la exclusión mutua del buffer entre proveedor y consumidor
     sem_t sem_consumidor; // Semáforo para la exclusión mutua del buffer entre consumidor y proveedor
     char *ruta;
+    char *fichDestino;
     int T;
     int P;
     int C;
@@ -42,15 +43,20 @@ typedef struct {
 pthread_cond_t cond_proveedor = PTHREAD_COND_INITIALIZER;
 
 void proveedorFunc(void *data);
+
 void consumidorFunc(void *data);
+
 bool esTipoValido(char c);
+
 bool esCadena(char *string);
 
-char path[MAX_COMMAND_LENGTH];
 
-int main (int argc, char *argv[]) {
-    char *path;
+int main(int argc, char *argv[]) {
+    char *path = argv[1];
+    int arg3 = atoi(argv[3]), arg4 = atoi(argv[4]), arg5 = atoi(argv[5]);
     SharedData sharedData;
+    FILE *file;
+
 
     // Verificación de la cantidad de argumentos
     if (argc != 6) {
@@ -59,90 +65,92 @@ int main (int argc, char *argv[]) {
     }
 
     //Verificación parámetros
-    if (esCadena(argv[2]) || atoi(argv[2]) <= 0 || atoi(argv[2]) > 5000){ //Cambiar atoi por strtol?
-         fprintf(stderr, "Error: T debe ser un entero positivo menor o igual a 5000.\n");
+    if (esCadena(argv[3]) || arg3 <= 0 || arg3 > 5000) {
+        fprintf(stderr, "Error: T debe ser un entero positivo menor o igual a 5000.\n");
         return -1;
     }
-    if (esCadena(argv[3]) || atoi(argv[3]) <= 0 || atoi(argv[3]) > 7){
+    if (esCadena(argv[4]) || arg4 <= 0 || arg4 > 7) {
         fprintf(stderr, "Error: P debe ser un entero positivo menor o igual a 7.\n");
         return -1;
     }
-    if (esCadena(argv[4]) || atoi(argv[4]) <= 0 || atoi(argv[4]) > 1000){
+    if (esCadena(argv[5]) || arg5 <= 0 || arg5 > 1000) {
         fprintf(stderr, "Error: C debe ser un entero positivo menor o igual a 1000.\n");
         return -1;
     }
-    sprintf(path, "proveedor%d.dat", atoi(argv[2]));
-  
-    sharedData.ruta = argv[1]; // Ruta de los archivos de entrada
-    sharedData.T = atoi(argv[2]); // Tamaño del búfer circular
-    sharedData.P = atoi(argv[3]); // Número total de proveedores
-    sharedData.C = atoi(argv[4]); // Número total de clientes
+    sprintf(path, "%s\\proveedor%d.dat", argv[1], 0);
+    file = fopen(path, "r");
+    if (file == NULL) {
+        fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", sharedData.P);
+    }
 
-  // Crear estructuras de datos compartidas
-  sharedData.in = 0;
-  sharedData.out = 0;
-  sharedData.buffer = (Producto *)malloc(sharedData.T * sizeof(Producto));
-  if (sharedData.buffer == NULL) {
-      fprintf(stderr, "Error al asignar memoria para el búfer compartido.\n");
-      return -1;
-  }
-  sem_init(&sharedData.sem_proveedor, 0, 1);
-  sem_init(&sharedData.sem_consumidor, 0, 1);
 
-  // Crear hilo del proveedor
-  pthread_t proveedorThread;
-  pthread_create(&proveedorThread, NULL, (void *)proveedorFunc, &sharedData);
+    sharedData.ruta = path; // Ruta de los archivos de entrada
+    sharedData.fichDestino = argv[2]; // Nombre del fichero destino.
+    sharedData.T = arg3; // Tamaño del búfer circular.
+    sharedData.P = arg4; // Número total de proveedores.
+    sharedData.C = arg5; // Número total de clientes.
 
-  // Crear hilo del consumidor
-  pthread_t consumidorThread;
-  pthread_create(&consumidorThread, NULL, (void *)consumidorFunc, &sharedData);
+    // Crear estructuras de datos compartidas
+    sharedData.in = 0;
+    sharedData.out = 0;
+    sharedData.buffer = (Producto *) malloc(sharedData.T * sizeof(Producto));
+    if (sharedData.buffer == NULL) {
+        fprintf(stderr, "Error al asignar memoria para el búfer compartido.\n");
+        return -1;
+    }
+    sem_init(&sharedData.sem_proveedor, 0, 1);
+    sem_init(&sharedData.sem_consumidor, 0, 1);
 
-  // Esperar a que los hilos terminen
-  pthread_join(proveedorThread, NULL);
-  pthread_join(consumidorThread, NULL);
+    // Crear hilo del proveedor
+    pthread_t proveedorThread;
+    pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, &sharedData);
 
-  // Destruir semáforos y liberar memoria
-  sem_destroy(&sharedData.sem_proveedor);
-  sem_destroy(&sharedData.sem_consumidor);
-  free(sharedData.buffer);
+    // Crear hilo del consumidor
+    pthread_t consumidorThread;
+    pthread_create(&consumidorThread, NULL, (void *) consumidorFunc, &sharedData);
 
-  return 0;
+    // Esperar a que los hilos terminen
+    pthread_join(proveedorThread, NULL);
+    pthread_join(consumidorThread, NULL);
+
+    // Destruir semáforos y liberar memoria
+    sem_destroy(&sharedData.sem_proveedor);
+    sem_destroy(&sharedData.sem_consumidor);
+    free(sharedData.buffer);
+
+    return 0;
 }
 
 void proveedorFunc(void *data) {
-  SharedData *sharedData = (SharedData *)data;
-  FILE *file, *outputFile;
-  char filename[MAX_COMMAND_LENGTH];
-  char c;
-  int productosLeidos = 0, productosValidos = 0, productosInvalidos = 0;
-  TotalProductos totalProductos = {{0}};
+    SharedData *sharedData = (SharedData *) data;
+    FILE *file, *outputFile;
+    char c;
+    int productosLeidos = 0, productosValidos = 0, productosInvalidos = 0;
+    TotalProductos totalProductos = {{0}};
 
     // Abrir el archivo de entrada del proveedor
-    sprintf(filename, "%sproveedor%d.dat", sharedData->ruta, sharedData->P);
+    sprintf(sharedData->ruta, "%sproveedor%d.dat", sharedData->ruta, sharedData->P);
 
-    file = fopen(filename, "r");
-    if (file == NULL) {
-        fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", sharedData->P);
-    }
+    file = fopen(sharedData->ruta, "r"); ///////////
 
     // Leer y procesar productos del archivo
     while ((c = fgetc(file)) != EOF) {
         productosLeidos++;
 
         if (esTipoValido(c)) {
-          // Procesar productos válidos
-          // Incluir semáforo de exclusión mutua para la escritura en el búfer
-          sem_wait(&sharedData->sem_proveedor);
-          // Escribir en el búfer
-          sharedData->buffer[sharedData->in].tipo = c;
-          sharedData->buffer[sharedData->in].proveedorID = sharedData->P;
-          sharedData->in = (sharedData->in + 1) % sharedData->T;
-          // Incrementar contador de productos válidos
-          productosValidos++;
-          // Actualizar registro de productos
-          totalProductos.total[c - 'a']++;
-          // Liberar semáforo de exclusión mutua
-          sem_post(&sharedData->sem_proveedor);
+            // Procesar productos válidos
+            // Incluir semáforo de exclusión mutua para la escritura en el búfer
+            sem_wait(&sharedData->sem_proveedor);
+            // Escribir en el búfer
+            sharedData->buffer[sharedData->in].tipo = c;
+            sharedData->buffer[sharedData->in].proveedorID = sharedData->P;
+            sharedData->in = (sharedData->in + 1) % sharedData->T;
+            // Incrementar contador de productos válidos
+            productosValidos++;
+            // Actualizar registro de productos
+            totalProductos.total[c - 'a']++;
+            // Liberar semáforo de exclusión mutua
+            sem_post(&sharedData->sem_proveedor);
         } else {
             // Procesar productos inválidos
             productosInvalidos++;
@@ -151,12 +159,11 @@ void proveedorFunc(void *data) {
     fclose(file); // Cerrar el archivo
 
     // Escribir resultados en el archivo de salida
-    sprintf(filename, "output_proveedor%d.txt", sharedData->P);
-
-    outputFile = fopen(filename, "w");
+    outputFile = fopen(sharedData->fichDestino, "w");
     if (outputFile == NULL) {
         fprintf(stderr, "Error al abrir el archivo de salida del proveedor %d.\n", sharedData->P);
-      return;
+        free(sharedData->buffer);
+        return;
     }
 
     fprintf(outputFile, "Proveedor: %d\n", sharedData->P);
@@ -166,16 +173,17 @@ void proveedorFunc(void *data) {
     for (char tipo = 'a'; tipo <= 'j'; tipo++) {
         fprintf(outputFile, "%d de tipo \"%c\".\n", totalProductos.total[tipo - 'a'], tipo);
     }
-  
-    // Avisar al consumidor que ha terminado
-    pthread_cond_signal(&cond_proveedor);
 
     // Cerrar el archivo de salida
     fclose(outputFile);
+
+    // Avisar al consumidor que ha terminado
+    pthread_cond_signal(&cond_proveedor);
 }
 
 void consumidorFunc(void *data) {
-    SharedData *sharedData = (SharedData *)data;
+    SharedData *sharedData = (SharedData *) data;
+    FILE *file, *outputFile;
     Producto productoConsumido;
     int productosConsumidos = 0;
     int totalProductosEsperados = sharedData->T * sharedData->C;
@@ -183,24 +191,22 @@ void consumidorFunc(void *data) {
     int productosConsumidosPorProveedor[sharedData->P];
 
     // Incluir semáforo de exclusión mutua para la lectura del búfer
-    while (productosConsumidos < totalProductosEsperados) {
-        // Esperar a que el proveedor haya terminado de producir
-        pthread_cond_wait(&cond_proveedor, &sharedData->sem_consumidor);
+    // Esperar a que el proveedor haya terminado de producir
+    pthread_cond_wait(&cond_proveedor, &sharedData->sem_consumidor);
 
-        // Leer del búfer
-        productoConsumido = sharedData->buffer[sharedData->out];
-        sharedData->out = (sharedData->out + 1) % sharedData->T;
+    // Leer del búfer
+    productoConsumido = sharedData->buffer[sharedData->out];
+    sharedData->out = (sharedData->out + 1) % sharedData->T;
 
-        // Incrementar contador de productos consumidos
-        productosConsumidos++;
+    // Incrementar contador de productos consumidos
+    productosConsumidos++;
 
-        // Actualizar registro de productos consumidos
-        productosConsumidosPorTipo[productoConsumido.tipo - 'a']++;
-        productosConsumidosPorProveedor[productoConsumido.proveedorID]++;
+    // Actualizar registro de productos consumidos
+    productosConsumidosPorTipo[productoConsumido.tipo - 'a']++;
+    productosConsumidosPorProveedor[productoConsumido.proveedorID]++;
 
-        // Liberar semáforo de exclusión mutua
-        sem_post(&sharedData->sem_consumidor);
-    }
+    // Liberar semáforo de exclusión mutua
+    sem_post(&sharedData->sem_consumidor);
 
     // Indicar que ha terminado de consumir
     pthread_cond_signal(&cond_proveedor);
