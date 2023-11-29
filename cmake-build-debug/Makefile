@@ -128,30 +128,6 @@ untitled/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/build
 .PHONY : untitled/fast
 
-X22_UlloaDeLaCalle.obj: X22_UlloaDeLaCalle.c.obj
-.PHONY : X22_UlloaDeLaCalle.obj
-
-# target to build an object file
-X22_UlloaDeLaCalle.c.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.obj
-.PHONY : X22_UlloaDeLaCalle.c.obj
-
-X22_UlloaDeLaCalle.i: X22_UlloaDeLaCalle.c.i
-.PHONY : X22_UlloaDeLaCalle.i
-
-# target to preprocess a source file
-X22_UlloaDeLaCalle.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.i
-.PHONY : X22_UlloaDeLaCalle.c.i
-
-X22_UlloaDeLaCalle.s: X22_UlloaDeLaCalle.c.s
-.PHONY : X22_UlloaDeLaCalle.s
-
-# target to generate assembly for a file
-X22_UlloaDeLaCalle.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.s
-.PHONY : X22_UlloaDeLaCalle.c.s
-
 X2_UlloaDeLaCalle.obj: X2_UlloaDeLaCalle.c.obj
 .PHONY : X2_UlloaDeLaCalle.obj
 
@@ -175,30 +151,6 @@ X2_UlloaDeLaCalle.s: X2_UlloaDeLaCalle.c.s
 X2_UlloaDeLaCalle.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/X2_UlloaDeLaCalle.c.s
 .PHONY : X2_UlloaDeLaCalle.c.s
-
-X2_UlloaDeLaCalleVERSION2.obj: X2_UlloaDeLaCalleVERSION2.c.obj
-.PHONY : X2_UlloaDeLaCalleVERSION2.obj
-
-# target to build an object file
-X2_UlloaDeLaCalleVERSION2.c.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/X2_UlloaDeLaCalleVERSION2.c.obj
-.PHONY : X2_UlloaDeLaCalleVERSION2.c.obj
-
-X2_UlloaDeLaCalleVERSION2.i: X2_UlloaDeLaCalleVERSION2.c.i
-.PHONY : X2_UlloaDeLaCalleVERSION2.i
-
-# target to preprocess a source file
-X2_UlloaDeLaCalleVERSION2.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/X2_UlloaDeLaCalleVERSION2.c.i
-.PHONY : X2_UlloaDeLaCalleVERSION2.c.i
-
-X2_UlloaDeLaCalleVERSION2.s: X2_UlloaDeLaCalleVERSION2.c.s
-.PHONY : X2_UlloaDeLaCalleVERSION2.s
-
-# target to generate assembly for a file
-X2_UlloaDeLaCalleVERSION2.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/X2_UlloaDeLaCalleVERSION2.c.s
-.PHONY : X2_UlloaDeLaCalleVERSION2.c.s
 
 copia.obj: copia.c.obj
 .PHONY : copia.obj
@@ -224,6 +176,30 @@ copia.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/copia.c.s
 .PHONY : copia.c.s
 
+shell.obj: shell.c.obj
+.PHONY : shell.obj
+
+# target to build an object file
+shell.c.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/shell.c.obj
+.PHONY : shell.c.obj
+
+shell.i: shell.c.i
+.PHONY : shell.i
+
+# target to preprocess a source file
+shell.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/shell.c.i
+.PHONY : shell.c.i
+
+shell.s: shell.c.s
+.PHONY : shell.s
+
+# target to generate assembly for a file
+shell.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/shell.c.s
+.PHONY : shell.c.s
+
 # Help Target
 help:
 	@echo The following are some of the valid targets for this Makefile:
@@ -233,18 +209,15 @@ help:
 	@echo ... edit_cache
 	@echo ... rebuild_cache
 	@echo ... untitled
-	@echo ... X22_UlloaDeLaCalle.obj
-	@echo ... X22_UlloaDeLaCalle.i
-	@echo ... X22_UlloaDeLaCalle.s
 	@echo ... X2_UlloaDeLaCalle.obj
 	@echo ... X2_UlloaDeLaCalle.i
 	@echo ... X2_UlloaDeLaCalle.s
-	@echo ... X2_UlloaDeLaCalleVERSION2.obj
-	@echo ... X2_UlloaDeLaCalleVERSION2.i
-	@echo ... X2_UlloaDeLaCalleVERSION2.s
 	@echo ... copia.obj
 	@echo ... copia.i
 	@echo ... copia.s
+	@echo ... shell.obj
+	@echo ... shell.i
+	@echo ... shell.s
 .PHONY : help
 
 

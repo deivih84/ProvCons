@@ -83,12 +83,13 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", sharedData.P);
     }
 
+    //DEPENDIENDO DEL HILO QUE SEA HABRA QUE PASARLE UN IDENTIFICADOR U OTRO
 
     sharedData.ruta = path; // Ruta de los archivos de entrada
     sharedData.fichDestino = argv[2]; // Nombre del fichero destino.
     sharedData.T = arg3; // Tamaño del búfer circular.
-    sharedData.P = arg4; // Número total de proveedores.
-    sharedData.C = arg5; // Número total de clientes.
+    sharedData.P = arg4; // Número total de proveedores. Se puede usar como identificador para proveedores.
+    sharedData.C = arg5; // Número total de clientes. Se puede usar como identificador para consumidores.
 
     // Crear estructuras de datos compartidas
     sharedData.in = 0;
@@ -96,10 +97,12 @@ int main(int argc, char *argv[]) {
     sharedData.buffer = (Producto *) malloc(sharedData.T * sizeof(Producto));
     if (sharedData.buffer == NULL) {
         fprintf(stderr, "Error al asignar memoria para el búfer compartido.\n");
-        return -1;
+        free(sharedData.buffer);
+        return -1; //Quizás habrá que cambiarlo por exit()
     }
+
     sem_init(&sharedData.sem_proveedor, 0, 1);
-    //sem_init(&sharedData.sem_consumidor, 0, 1);
+    sem_init(&sharedData.sem_consumidor, 0, 1);
 
     // Crear hilo del proveedor
     pthread_t proveedorThread;
@@ -107,15 +110,15 @@ int main(int argc, char *argv[]) {
 
     // Crear hilo del consumidor
     pthread_t consumidorThread;
-    //pthread_create(&consumidorThread, NULL, (void *) consumidorFunc, &sharedData);
+    pthread_create(&consumidorThread, NULL, (void *) consumidorFunc, &sharedData);
 
     // Esperar a que los hilos terminen
     pthread_join(proveedorThread, NULL);
-    //pthread_join(consumidorThread, NULL);
+    pthread_join(consumidorThread, NULL);
 
     // Destruir semáforos y liberar memoria
     sem_destroy(&sharedData.sem_proveedor);
-    //sem_destroy(&sharedData.sem_consumidor);
+    sem_destroy(&sharedData.sem_consumidor);
     free(sharedData.buffer);
 
     return 0;
@@ -129,9 +132,7 @@ void proveedorFunc(void *data) {
     TotalProductos totalProductos = {{0}};
 
     // Abrir el archivo de entrada del proveedor
-    //sprintf(sharedData->ruta, "%sproveedor%d.dat", sharedData->ruta, sharedData->P);
-
-    file = fopen(sharedData->ruta, "r"); ///////////
+    file = fopen(sharedData->ruta, "r");
 
     // Leer y procesar productos del archivo
     while ((c = fgetc(file)) != EOF) {
@@ -139,7 +140,7 @@ void proveedorFunc(void *data) {
 
         if (esTipoValido(c)) {
             // Procesar productos válidos
-            // Incluir semáforo de exclusión mutua para la escritura en el búfer
+            // Incluir semáforo para la escritura en el búfer
             sem_wait(&sharedData->sem_proveedor);
             // Escribir en el búfer
             sharedData->buffer[sharedData->in].tipo = c;
@@ -163,6 +164,7 @@ void proveedorFunc(void *data) {
     if (outputFile == NULL) {
         fprintf(stderr, "Error al abrir el archivo de salida del proveedor %d.\n", sharedData->P);
         free(sharedData->buffer);
+        fclose(outputFile);
         return;
     }
 
@@ -183,7 +185,7 @@ void proveedorFunc(void *data) {
 
 void consumidorFunc(void *data) {
     SharedData *sharedData = (SharedData *) data;
-    FILE *file, *outputFile;
+    FILE *outputFile;
     Producto productoConsumido;
     int productosConsumidos = 0;
     int totalProductosEsperados = sharedData->T * sharedData->C;
@@ -194,12 +196,16 @@ void consumidorFunc(void *data) {
     // Esperar a que el proveedor haya terminado de producir
     pthread_cond_wait(&cond_proveedor, &sharedData->sem_consumidor);
 
-    // Leer del búfer
-    productoConsumido = sharedData->buffer[sharedData->out];
-    sharedData->out = (sharedData->out + 1) % sharedData->T;
+    outputFile = fopen(sharedData->fichDestino, "w");
 
-    // Incrementar contador de productos consumidos
-    productosConsumidos++;
+    // Leer del búfer y escribir en el fichero.
+    for (int i = 0; i < sharedData->T * sizeof(Producto); ++i) {
+        if (sharedData->buffer[i].proveedorID == sharedData->C) {
+            fprintf(outputFile, "Producto tipo \"%c\": %d", sharedData->buffer[i].tipo, sharedData->buffer[i].proveedorID);
+
+
+        }
+    }
 
     // Actualizar registro de productos consumidos
     productosConsumidosPorTipo[productoConsumido.tipo - 'a']++;
