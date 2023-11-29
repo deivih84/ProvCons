@@ -39,7 +39,7 @@ bool esCadena(char *string);
 char path[MAX_COMMAND_LENGTH];
 
 int main (int argc, char *argv[]) {
-    char *path;
+    char *path = argv[1];
 
     printf("Print para debug 1\n");
 
@@ -62,8 +62,8 @@ int main (int argc, char *argv[]) {
         fprintf(stderr, "Error: C debe ser un entero positivo menor o igual a 1000.\n");
         return -1;
     }
-    sprintf(path, "proveedor%d.dat", atoi(argv[2]));
-    printf("Print para debug 2\n");
+    sprintf(path, "%s\\proveedor%d.dat", argv[1], 0);
+    printf("%s\n", path);
 
     ProveedorData proveedor_data;
     proveedor_data.ruta = argv[1]; // Ruta de los archivos de entrada
@@ -110,7 +110,7 @@ void proveedorFunc(void *data) {
 
         if (esTipoValido(c)) {
             // Procesar productos válidos
-            Producto nuevoProducto = {c, proveedor_data->P};
+            Producto nuevoProducto = {c, proveedor_data->P}; //Variable en medio del código
             buffer[in] = nuevoProducto;
             in = (in + 1) % proveedor_data->T;
             productosValidos++;
