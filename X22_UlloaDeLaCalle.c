@@ -107,10 +107,11 @@ int main(int argc, char *argv[]) {
     sharedData.out = 0;
     sharedData.buffer = (Producto *) malloc(sharedData.T * sizeof(Producto));
     if (sharedData.buffer == NULL) {
+        free(sharedData.buffer);
         fprintf(stderr, "Error al asignar memoria para el búfer compartido.\n");
         return -1;
     }
-    sharedData.listaConsumidores = NULL; // Inicializar la lista de consumidores
+    sharedData.listaConsumidores = NULL; // Inicializar la lista de consumidores ////
     sem_init(&sharedData.sem_proveedor, 0, 1);
     sem_init(&sharedData.sem_consumidor, 0, 1);
 
@@ -166,9 +167,7 @@ void proveedorFunc(void *data) {
     TotalProductos totalProductos = {{0}};
 
     // Abrir el archivo de entrada del proveedor
-    //sprintf(sharedData->ruta, "%sproveedor%d.dat", sharedData->ruta, sharedData->P);
-
-    file = fopen(sharedData->ruta, "r"); ///////////
+    file = fopen(sharedData->ruta, "r");
 
     // Leer y procesar productos del archivo
     while ((c = fgetc(file)) != EOF) {
@@ -204,7 +203,7 @@ void proveedorFunc(void *data) {
     }
 
     fprintf(outputFile, "Proveedor: %d\n", sharedData->P);
-    fprintf(outputFile, "Productos procesados : %d.\n", productosLeidos);
+    fprintf(outputFile, "Productos procesados: %d.\n", productosLeidos);
     fprintf(outputFile, "Productos Inválidos: %d\n", productosInvalidos);
     fprintf(outputFile, "Productos Válidos: %d. De los cuales se han insertado:\n", productosValidos);
 
@@ -221,9 +220,8 @@ void proveedorFunc(void *data) {
 
 void consumidorFunc(void *data) {
     SharedData *sharedData = (SharedData *) data;
-    int consumidorID = 0;
+    int consumidorID = 0, bandera = 0;
     FILE *outputFile;
-    int bandera = 0;
 
     ConsumidorInfo* consumidor = (ConsumidorInfo*)malloc(sizeof(ConsumidorInfo));
     consumidor->consumidorID = consumidorID;
