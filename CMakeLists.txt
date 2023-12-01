@@ -8,4 +8,5 @@ add_executable(untitled
         shell.c
         X2_UlloaDeLaCalle.c
         shell.c
+        X22_UlloaDeLaCalle.c
 )
