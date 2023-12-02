@@ -34,8 +34,6 @@ typedef struct ConsumidorInfo {
 
 // Estructura para compartir datos entre proveedor y consumidor
 typedef struct {
-    sem_t sem_proveedor;  // Semáforo para la exclusión mutua del buffer entre proveedor y consumidor
-    sem_t sem_consumidor; // Semáforo para la exclusión mutua del buffer entre consumidor y proveedor
     char *ruta;
     char *fichDestino;
     int T;
@@ -50,6 +48,7 @@ typedef struct {
 
 // Variable de condición para la sincronización entre proveedor y consumidor
 pthread_cond_t cond_proveedor = PTHREAD_COND_INITIALIZER;
+sem_t semaforoProveedor, semaforoBufer, semaforoLista;
 
 void proveedorFunc(void *data);
 
@@ -68,6 +67,7 @@ int main(int argc, char *argv[]) {
     SharedData sharedData;
     FILE *file;
     FILE *outputFile;
+
 
 
     // Verificación de la cantidad de argumentos
@@ -112,8 +112,8 @@ int main(int argc, char *argv[]) {
         return -1;
     }
     sharedData.listaConsumidores = NULL; // Inicializar la lista de consumidores ////
-    sem_init(&sharedData.sem_proveedor, 0, 1);
-    sem_init(&sharedData.sem_consumidor, 0, 1);
+    sem_init(semaforoProveedor, 0, 1);
+    sem_init(semaforoBufer, 0, 1);
 
     // Crear hilo del proveedor
     pthread_t proveedorThread;
@@ -152,8 +152,8 @@ int main(int argc, char *argv[]) {
     }
 
     // Destruir semáforos y liberar memoria
-    sem_destroy(&sharedData.sem_proveedor);
-    sem_destroy(&sharedData.sem_consumidor);
+    sem_destroy(&semaforoProveedor);
+    sem_destroy(&semaforoBufer);
     free(sharedData.buffer);
 
     return 0;
@@ -176,7 +176,7 @@ void proveedorFunc(void *data) {
         if (esTipoValido(c)) {
             // Procesar productos válidos
             // Incluir semáforo de exclusión mutua para la escritura en el búfer
-            sem_wait(&sharedData->sem_proveedor);
+            sem_wait(&semaforoProveedor);
             // Escribir en el búfer
             sharedData->buffer[sharedData->in].tipo = c;
             sharedData->buffer[sharedData->in].proveedorID = sharedData->P;
@@ -186,7 +186,7 @@ void proveedorFunc(void *data) {
             // Actualizar registro de productos
             totalProductos.total[c - 'a']++;
             // Liberar semáforo de exclusión mutua
-            sem_post(&sharedData->sem_proveedor);
+            sem_post(&semaforoProveedor);
         } else {
             // Procesar productos inválidos
             productosInvalidos++;
@@ -231,13 +231,9 @@ void consumidorFunc(void *data) {
 
     // Consumir productos del búfer
     while (bandera!=1) {
-        // Incluir semáforo de exclusión mutua para la lectura del búfer
-        sem_wait(&sharedData->sem_consumidor);
+        sem_wait(semaforoBufer);
 
-        // Esperar a que haya productos para consumir
-        while (sharedData->in == sharedData->out) {
-            pthread_cond_wait(&cond_proveedor, &sharedData->sem_consumidor);
-        }
+
 
         // Leer del búfer
         Producto productoConsumido = sharedData->buffer[sharedData->out];
@@ -251,9 +247,6 @@ void consumidorFunc(void *data) {
         // Actualizar registro de productos consumidos por tipo y proveedor
         consumidor->productosConsumidosPorTipo[productoConsumido.tipo - 'a']++;
         consumidor->productosConsumidos++;
-
-        // Liberar semáforo de exclusión mutua
-        sem_post(&sharedData->sem_consumidor);
 
         // Verificar si se han consumido todos los productos
         if (consumidor->productosConsumidos == sharedData->T) {
