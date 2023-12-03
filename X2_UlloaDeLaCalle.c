@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <ctype.h>
 #include <stdbool.h>
 #include <pthread.h>
@@ -46,14 +45,14 @@ typedef struct {
 
 // Variables GLOBALES :)
 pthread_cond_t cond_proveedor = PTHREAD_COND_INITIALIZER;
-sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoContadorBuffer;
+sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoContadorBuffer, semaforoSharedData;
 Producto *buffer;
 int contBuffer = 0;
 ConsumidorInfo *listaConsumidores;
 
-void proveedorFunc(void *data);
+void proveedorFunc(SharedData *data);
 
-void consumidorFunc(void *data);
+void consumidorFunc(SharedData *data);
 
 ConsumidorInfo *initListaProducto(ConsumidorInfo *lista);
 
@@ -128,6 +127,9 @@ int main(int argc, char *argv[]) {
     sem_init(semaforoFichero, 0, 1);
     sem_init(semaforoBuffer, 0, 1);
     sem_init(semaforoLista, 0, 1);
+    sem_init(semaforoContadorBuffer, 0, 1);
+    sem_init(semaforoSharedData, 0, 1);
+
 
 
     // Crear hilo del proveedor
@@ -142,63 +144,73 @@ int main(int argc, char *argv[]) {
     pthread_join(proveedorThread, NULL);
     pthread_join(consumidorThread, NULL);
 
-
-    printf_s("Hola");
-
     // Facturador
     facturador(&sharedData);
-
-    printf_s("Hola");
 
 
     // Destruir semáforos y liberar memoria
     sem_destroy(&semaforoFichero);
     sem_destroy(&semaforoBuffer);
     sem_destroy(&semaforoLista);
+    sem_destroy(&semaforoSharedData);
+    sem_destroy(&semaforoContadorBuffer);
+
     fclose(outputFile);
     free(buffer);
-    return 0;
+    //return 0;
 }
 
-void proveedorFunc(void *data) {
-    SharedData *sharedData = (SharedData *) data;
+void proveedorFunc(SharedData *sharedData) {
     FILE *file, *outputFile;
     char c;
     int productosLeidos = 0, productosValidos = 0, productosInvalidos = 0, proveedorID = 0;
     TotalProductos totalProductos = {{0}};
 
+
+
+    ////////////////////////////////////////////////////
+    printf_s("%s\n", sharedData->ruta);
+    printf_s("debug1\n");
+
     // Abrir el archivo de entrada del proveedor
     file = fopen(sharedData->ruta, "r");
 
+    printf_s("debug2\n");
+    ////////////////////////////////////////////////////
+
+
+
     // Leer y procesar productos del archivo
-    while ((c = fgetc(file)) != EOF) {
+    while ((c = (char) fgetc(file)) != EOF) {
         productosLeidos++;
 
+        printf_s("hola1");
+
         if (esTipoValido(c)) {
-            // Procesar productos válidos
-            // Incluir semáforo de exclusión mutua para la escritura en el búfer
-            sem_wait(&semaforoFichero);
+            // Incluir semáforo para escritura en el búfer
+            sem_wait(&semaforoBuffer);
             // Escribir en el búfer
             buffer[sharedData->in].tipo = c;
             buffer[sharedData->in].proveedorID = proveedorID;
             sharedData->in = (sharedData->in + 1) % sharedData->T;
+
+            sem_post(&semaforoBuffer);
             // Incrementar contador de productos válidos
             productosValidos++;
             // Actualizar registro de productos
             totalProductos.total[c - 'a']++;
-            // Liberar semáforo de exclusión mutua
-            sem_post(&semaforoFichero);
         } else {
             // Procesar productos inválidos
             productosInvalidos++;
         }
     }
     fclose(file); // Cerrar el archivo
+    sem_post(semaforoFichero);
 
     // Escribir resultados en el archivo de salida
     outputFile = fopen(sharedData->fichDestino, "w");
     if (outputFile == NULL) {
-        fprintf(stderr, "Error al abrir el archivo de salida del proveedor %d.\n", sharedData->P);
+        fprintf(stderr, "Error al abrir el archivo de salida del proveedor %d.\n", 0);
         free(buffer);
         return;
     }
@@ -219,17 +231,14 @@ void proveedorFunc(void *data) {
     pthread_cond_signal(&cond_proveedor);
 }
 
-void consumidorFunc(void *data) {
-    SharedData *sharedData = (SharedData *) data;
+void consumidorFunc(SharedData *sharedData) {
     int consumidorID = 0, bandera = 0, numeroProductosConsumidosPorTipo['j' - 'a' + 1], numeroProductosConsumidos = 0;
     Producto productoConsumido;
 
-
-    ConsumidorInfo* consumidor = (ConsumidorInfo*)malloc(sizeof(ConsumidorInfo));
-    consumidor->consumidorID = consumidorID;
-    consumidor->productosConsumidos = 0;
-    memset(consumidor->productosConsumidosPorTipo, 0, sizeof(consumidor->productosConsumidosPorTipo));
-    consumidor->siguiente = NULL;
+    // Incializar numeroProductosConsumidosPorTipo[]
+    for (int i = 0; i < 9; ++i) {
+        numeroProductosConsumidosPorTipo[i] = 0;
+    }
 
     // Consumir productos del búfer
     while (bandera != 1) {
@@ -238,19 +247,25 @@ void consumidorFunc(void *data) {
         sem_wait(semaforoContadorBuffer);
         sem_wait(semaforoBuffer);
         productoConsumido = buffer[contBuffer];
+
+        sem_wait(semaforoSharedData);
         if (contBuffer+1 >= sharedData->T || esTipoValido(productoConsumido.tipo)) {bandera = 1;}
         sem_post(semaforoBuffer);
 
         numeroProductosConsumidos++; // Incremento de contador general
-        numeroProductosConsumidosPorTipo[productoConsumido.tipo - 'a']++; // Incremento de contador del tipo correspondiente
+        printf_s("%s", productoConsumido.tipo);
+        printf_s("%d", productoConsumido.proveedorID);
+        numeroProductosConsumidosPorTipo[productoConsumido.tipo + 'a']++; // Incremento de contador del tipo correspondiente
 
         //Se actualiza el contador del buffer
         contBuffer = (contBuffer + 1) % sharedData->T;
+        sem_post(semaforoSharedData);
         sem_post(semaforoContadorBuffer);
     }
 
     // Escribe en la lista el producto leido del buffer (lentamente perdiendo la cordura)
     sem_wait(semaforoLista);
+    printf("%d, %d, %d\n", numeroProductosConsumidos, numeroProductosConsumidosPorTipo[0], numeroProductosConsumidosPorTipo[2]);
     listaConsumidores = agregarConsumidor(listaConsumidores, numeroProductosConsumidos, numeroProductosConsumidosPorTipo, productoConsumido.proveedorID); //hay que pasarle prodConsPorTipo
     sem_post(semaforoLista);
 
@@ -281,7 +296,7 @@ void facturador(SharedData* sharedData) {
         fprintf(outputFile, "Consumidor: %d\n", i);
         fprintf(outputFile, "Productos Consumidos: %d. De los cuales:\n", productosPorContador[i]);
 
-        for (int j = 0; j < sizeof(arrayConsumidores[0]); ++j) {
+        for (int j = 0; j < ('j' - 'a' + 1); ++j) {
             fprintf(outputFile, "Producto tipo \"%c\": %d\n", (char)(j+'a'), arrayConsumidores[i][j]);
         }
 
