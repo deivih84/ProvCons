@@ -6,7 +6,6 @@ set(CMAKE_C_STANDARD 11)
 add_executable(untitled
         copia.c
         shell.c
-        X2_UlloaDeLaCalle.c
         shell.c
-        X22_UlloaDeLaCalle.c
+        X2_UlloaDeLaCalle.c
 )
