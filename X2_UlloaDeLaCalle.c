@@ -25,11 +25,11 @@ typedef struct {
 } TotalProductos;
 
 // Estructura para almacenar la información del consumidor
-typedef struct ConsumidorInfo {
+typedef struct nodo {
     int consumidorID;
     int productosConsumidos;
     int productosConsumidosPorTipo['j' - 'a' + 1];
-    struct ConsumidorInfo* siguiente;
+    struct nodo *siguiente;
 } ConsumidorInfo;
 
 // Estructura para compartir datos entre proveedor y consumidor
@@ -44,17 +44,22 @@ typedef struct {
     TotalProductos totalProductos; // Registro del total de productos
 } SharedData;
 
-// Variable de condición para la sincronización entre proveedor y consumidor
+// Variables GLOBALES :)
 pthread_cond_t cond_proveedor = PTHREAD_COND_INITIALIZER;
 sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoContadorBuffer;
-Producto *buffer, listaEnlazada[100];
+Producto *buffer;
 int contBuffer = 0;
+ConsumidorInfo *listaConsumidores;
 
 void proveedorFunc(void *data);
 
 void consumidorFunc(void *data);
 
-void agregarConsumidor(SharedData* sharedData, int consumidorID);
+ConsumidorInfo *initListaProducto(ConsumidorInfo *lista);
+
+ConsumidorInfo *agregarConsumidor(ConsumidorInfo *producto, int productosConsumidos, int *productosConsumidosPorTipo, int ID);
+
+void facturador(SharedData* sharedData);
 
 bool esTipoValido(char c);
 
@@ -65,8 +70,8 @@ int main(int argc, char *argv[]) {
     char *path = argv[1];
     int arg3 = atoi(argv[3]), arg4 = atoi(argv[4]), arg5 = atoi(argv[5]);
     SharedData sharedData;
-    FILE *file;
-    FILE *outputFile;
+    listaConsumidores = initListaProducto(listaConsumidores);
+    FILE *file, *outputFile;
 
 
     // Verificación de la cantidad de argumentos
@@ -137,8 +142,13 @@ int main(int argc, char *argv[]) {
     pthread_join(proveedorThread, NULL);
     pthread_join(consumidorThread, NULL);
 
-    // Facturador
 
+    printf_s("Hola");
+
+    // Facturador
+    facturador(&sharedData);
+
+    printf_s("Hola");
 
 
     // Destruir semáforos y liberar memoria
@@ -154,7 +164,7 @@ void proveedorFunc(void *data) {
     SharedData *sharedData = (SharedData *) data;
     FILE *file, *outputFile;
     char c;
-    int productosLeidos = 0, productosValidos = 0, productosInvalidos = 0;
+    int productosLeidos = 0, productosValidos = 0, productosInvalidos = 0, proveedorID = 0;
     TotalProductos totalProductos = {{0}};
 
     // Abrir el archivo de entrada del proveedor
@@ -170,7 +180,7 @@ void proveedorFunc(void *data) {
             sem_wait(&semaforoFichero);
             // Escribir en el búfer
             buffer[sharedData->in].tipo = c;
-            buffer[sharedData->in].proveedorID = sharedData->P;
+            buffer[sharedData->in].proveedorID = proveedorID;
             sharedData->in = (sharedData->in + 1) % sharedData->T;
             // Incrementar contador de productos válidos
             productosValidos++;
@@ -194,7 +204,7 @@ void proveedorFunc(void *data) {
     }
 
     fprintf(outputFile, "Proveedor: %d\n", sharedData->P);
-    fprintf(outputFile, "Productos procesados: %d.\n", productosLeidos);
+    fprintf(outputFile, "Productos procesados: %d\n", productosLeidos);
     fprintf(outputFile, "Productos Inválidos: %d\n", productosInvalidos);
     fprintf(outputFile, "Productos Válidos: %d. De los cuales se han insertado:\n", productosValidos);
 
@@ -211,8 +221,9 @@ void proveedorFunc(void *data) {
 
 void consumidorFunc(void *data) {
     SharedData *sharedData = (SharedData *) data;
-    int consumidorID = 0, bandera = 0;
+    int consumidorID = 0, bandera = 0, numeroProductosConsumidosPorTipo['j' - 'a' + 1], numeroProductosConsumidos = 0;
     Producto productoConsumido;
+
 
     ConsumidorInfo* consumidor = (ConsumidorInfo*)malloc(sizeof(ConsumidorInfo));
     consumidor->consumidorID = consumidorID;
@@ -225,48 +236,62 @@ void consumidorFunc(void *data) {
 
         // Leer del buffer
         sem_wait(semaforoContadorBuffer);
-        //bandera = (contBuffer >= sharedData->T) ? 0 : 1; // Sale si ve que es la última o ya se ha pasado
-        if (contBuffer >= sharedData->T) {break;}
         sem_wait(semaforoBuffer);
         productoConsumido = buffer[contBuffer];
+        if (contBuffer+1 >= sharedData->T || esTipoValido(productoConsumido.tipo)) {bandera = 1;}
         sem_post(semaforoBuffer);
 
-
-        // Escribe en la lista el producto leido del buffer
-        sem_wait(semaforoLista);
-        printf("%d\n", contBuffer);
-        listaEnlazada[contBuffer].tipo = productoConsumido.tipo;
-        listaEnlazada[contBuffer].proveedorID = productoConsumido.proveedorID;
-        sem_post(semaforoLista);
+        numeroProductosConsumidos++; // Incremento de contador general
+        numeroProductosConsumidosPorTipo[productoConsumido.tipo - 'a']++; // Incremento de contador del tipo correspondiente
 
         //Se actualiza el contador del buffer
         contBuffer = (contBuffer + 1) % sharedData->T;
         sem_post(semaforoContadorBuffer);
     }
 
+    // Escribe en la lista el producto leido del buffer (lentamente perdiendo la cordura)
+    sem_wait(semaforoLista);
+    listaConsumidores = agregarConsumidor(listaConsumidores, numeroProductosConsumidos, numeroProductosConsumidosPorTipo, productoConsumido.proveedorID); //hay que pasarle prodConsPorTipo
+    sem_post(semaforoLista);
+
     // Salir de la función del consumidor
     pthread_exit(NULL);
 }
 
 
-/*void agregarConsumidor(SharedData* sharedData, int consumidorID) {
-    ConsumidorInfo* consumidor = (ConsumidorInfo*)malloc(sizeof(ConsumidorInfo));
-    consumidor->consumidorID = consumidorID;
-    consumidor->productosConsumidos = 0;
-    memset(consumidor->productosConsumidosPorTipo, 0, sizeof(consumidor->productosConsumidosPorTipo));
-    consumidor->siguiente = NULL;
+void facturador(SharedData* sharedData) {
+    FILE *outputFile;
+    int arrayConsumidores[sharedData->C]['j' - 'a' + 1], productosPorContador[sharedData->C];
+
+    printf_s("Hola");
+    sem_wait(semaforoLista);
 
     // Agregar a la lista
-    if (listaEnlazada == NULL) {
-        listaEnlazada = consumidor;
-    } else {
-        ConsumidorInfo* actual = listaEnlazada;
-        while (actual->siguiente != NULL) {
-            actual = actual->siguiente;
+/*    while (listaConsumidores != NULL) {
+        printf("%c,%d\n", listaConsumidores->tipo, listaConsumidores->proveedorID);
+        // Contadores de productos, uno por tipos y uno por consumidores
+        arrayConsumidores[listaConsumidores->proveedorID][listaConsumidores->tipo - 'a']++;
+        productosPorContador[listaConsumidores->proveedorID]++;
+        listaConsumidores = listaConsumidores->siguiente;
+    }*/
+    outputFile = fopen(sharedData->fichDestino, "a");
+
+
+    for (int i = 0; i < sharedData->C; ++i) {
+        fprintf(outputFile, "Consumidor: %d\n", i);
+        fprintf(outputFile, "Productos Consumidos: %d. De los cuales:\n", productosPorContador[i]);
+
+        for (int j = 0; j < sizeof(arrayConsumidores[0]); ++j) {
+            fprintf(outputFile, "Producto tipo \"%c\": %d\n", (char)(j+'a'), arrayConsumidores[i][j]);
         }
-        actual->siguiente = consumidor;
+
     }
-}*/
+
+
+
+
+
+}
 
 bool esTipoValido(char c) {
     return (c >= 'a' && c <= 'j');
@@ -279,4 +304,29 @@ bool esCadena(char *cadena) {
         }
     }
     return false; // Devuelve 0 si es una cadena de dígitos
+}
+
+ConsumidorInfo *initListaProducto(ConsumidorInfo *lista){
+    lista = NULL;
+    return lista;
+}
+
+ConsumidorInfo *agregarConsumidor(ConsumidorInfo *producto, int productosConsumidos, int *productosConsumidosPorTipo, int ID) {
+    ConsumidorInfo *nuevoConsumidor;
+    ConsumidorInfo *aux;
+    nuevoConsumidor = (ConsumidorInfo *) malloc(sizeof(ConsumidorInfo));
+    nuevoConsumidor->productosConsumidos = productosConsumidos;
+    memcpy(nuevoConsumidor->productosConsumidosPorTipo, productosConsumidosPorTipo, sizeof(nuevoConsumidor->productosConsumidosPorTipo));
+    nuevoConsumidor->consumidorID = ID;
+    nuevoConsumidor->siguiente = NULL;
+    if (producto == NULL){
+        producto = nuevoConsumidor;
+    } else {
+        aux = producto;
+        while (aux->siguiente != NULL) {
+            aux = aux->siguiente;
+        }
+        aux->siguiente = nuevoConsumidor;
+    }
+    return producto;
 }

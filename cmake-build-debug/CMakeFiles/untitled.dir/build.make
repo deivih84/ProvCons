@@ -110,26 +110,26 @@ CMakeFiles/untitled.dir/X2_UlloaDeLaCalle.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/untitled.dir/X2_UlloaDeLaCalle.c.s"
 	C:\PROGRA~1\JETBRA~1\CLION2~1.2\bin\mingw\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S C:\Users\forex\CLionProjects\ProvCons\X2_UlloaDeLaCalle.c -o CMakeFiles\untitled.dir\X2_UlloaDeLaCalle.c.s
 
-CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.obj: CMakeFiles/untitled.dir/flags.make
-CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.obj: C:/Users/forex/CLionProjects/ProvCons/X22_UlloaDeLaCalle.c
-CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.obj: CMakeFiles/untitled.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:\Users\forex\CLionProjects\ProvCons\cmake-build-debug\CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building C object CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.obj"
-	C:\PROGRA~1\JETBRA~1\CLION2~1.2\bin\mingw\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.obj -MF CMakeFiles\untitled.dir\X22_UlloaDeLaCalle.c.obj.d -o CMakeFiles\untitled.dir\X22_UlloaDeLaCalle.c.obj -c C:\Users\forex\CLionProjects\ProvCons\X22_UlloaDeLaCalle.c
+CMakeFiles/untitled.dir/listasEnlazadas.c.obj: CMakeFiles/untitled.dir/flags.make
+CMakeFiles/untitled.dir/listasEnlazadas.c.obj: C:/Users/forex/CLionProjects/ProvCons/listasEnlazadas.c
+CMakeFiles/untitled.dir/listasEnlazadas.c.obj: CMakeFiles/untitled.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:\Users\forex\CLionProjects\ProvCons\cmake-build-debug\CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building C object CMakeFiles/untitled.dir/listasEnlazadas.c.obj"
+	C:\PROGRA~1\JETBRA~1\CLION2~1.2\bin\mingw\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/untitled.dir/listasEnlazadas.c.obj -MF CMakeFiles\untitled.dir\listasEnlazadas.c.obj.d -o CMakeFiles\untitled.dir\listasEnlazadas.c.obj -c C:\Users\forex\CLionProjects\ProvCons\listasEnlazadas.c
 
-CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.i"
-	C:\PROGRA~1\JETBRA~1\CLION2~1.2\bin\mingw\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E C:\Users\forex\CLionProjects\ProvCons\X22_UlloaDeLaCalle.c > CMakeFiles\untitled.dir\X22_UlloaDeLaCalle.c.i
+CMakeFiles/untitled.dir/listasEnlazadas.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/untitled.dir/listasEnlazadas.c.i"
+	C:\PROGRA~1\JETBRA~1\CLION2~1.2\bin\mingw\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E C:\Users\forex\CLionProjects\ProvCons\listasEnlazadas.c > CMakeFiles\untitled.dir\listasEnlazadas.c.i
 
-CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.s"
-	C:\PROGRA~1\JETBRA~1\CLION2~1.2\bin\mingw\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S C:\Users\forex\CLionProjects\ProvCons\X22_UlloaDeLaCalle.c -o CMakeFiles\untitled.dir\X22_UlloaDeLaCalle.c.s
+CMakeFiles/untitled.dir/listasEnlazadas.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/untitled.dir/listasEnlazadas.c.s"
+	C:\PROGRA~1\JETBRA~1\CLION2~1.2\bin\mingw\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S C:\Users\forex\CLionProjects\ProvCons\listasEnlazadas.c -o CMakeFiles\untitled.dir\listasEnlazadas.c.s
 
 # Object files for target untitled
 untitled_OBJECTS = \
 "CMakeFiles/untitled.dir/copia.c.obj" \
 "CMakeFiles/untitled.dir/shell.c.obj" \
 "CMakeFiles/untitled.dir/X2_UlloaDeLaCalle.c.obj" \
-"CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.obj"
+"CMakeFiles/untitled.dir/listasEnlazadas.c.obj"
 
 # External object files for target untitled
 untitled_EXTERNAL_OBJECTS =
@@ -137,7 +137,7 @@ untitled_EXTERNAL_OBJECTS =
 untitled.exe: CMakeFiles/untitled.dir/copia.c.obj
 untitled.exe: CMakeFiles/untitled.dir/shell.c.obj
 untitled.exe: CMakeFiles/untitled.dir/X2_UlloaDeLaCalle.c.obj
-untitled.exe: CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.obj
+untitled.exe: CMakeFiles/untitled.dir/listasEnlazadas.c.obj
 untitled.exe: CMakeFiles/untitled.dir/build.make
 untitled.exe: CMakeFiles/untitled.dir/linkLibs.rsp
 untitled.exe: CMakeFiles/untitled.dir/objects1.rsp

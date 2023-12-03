@@ -128,30 +128,6 @@ untitled/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/build
 .PHONY : untitled/fast
 
-X22_UlloaDeLaCalle.obj: X22_UlloaDeLaCalle.c.obj
-.PHONY : X22_UlloaDeLaCalle.obj
-
-# target to build an object file
-X22_UlloaDeLaCalle.c.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.obj
-.PHONY : X22_UlloaDeLaCalle.c.obj
-
-X22_UlloaDeLaCalle.i: X22_UlloaDeLaCalle.c.i
-.PHONY : X22_UlloaDeLaCalle.i
-
-# target to preprocess a source file
-X22_UlloaDeLaCalle.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.i
-.PHONY : X22_UlloaDeLaCalle.c.i
-
-X22_UlloaDeLaCalle.s: X22_UlloaDeLaCalle.c.s
-.PHONY : X22_UlloaDeLaCalle.s
-
-# target to generate assembly for a file
-X22_UlloaDeLaCalle.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/X22_UlloaDeLaCalle.c.s
-.PHONY : X22_UlloaDeLaCalle.c.s
-
 X2_UlloaDeLaCalle.obj: X2_UlloaDeLaCalle.c.obj
 .PHONY : X2_UlloaDeLaCalle.obj
 
@@ -200,6 +176,30 @@ copia.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/copia.c.s
 .PHONY : copia.c.s
 
+listasEnlazadas.obj: listasEnlazadas.c.obj
+.PHONY : listasEnlazadas.obj
+
+# target to build an object file
+listasEnlazadas.c.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/listasEnlazadas.c.obj
+.PHONY : listasEnlazadas.c.obj
+
+listasEnlazadas.i: listasEnlazadas.c.i
+.PHONY : listasEnlazadas.i
+
+# target to preprocess a source file
+listasEnlazadas.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/listasEnlazadas.c.i
+.PHONY : listasEnlazadas.c.i
+
+listasEnlazadas.s: listasEnlazadas.c.s
+.PHONY : listasEnlazadas.s
+
+# target to generate assembly for a file
+listasEnlazadas.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/listasEnlazadas.c.s
+.PHONY : listasEnlazadas.c.s
+
 shell.obj: shell.c.obj
 .PHONY : shell.obj
 
@@ -233,15 +233,15 @@ help:
 	@echo ... edit_cache
 	@echo ... rebuild_cache
 	@echo ... untitled
-	@echo ... X22_UlloaDeLaCalle.obj
-	@echo ... X22_UlloaDeLaCalle.i
-	@echo ... X22_UlloaDeLaCalle.s
 	@echo ... X2_UlloaDeLaCalle.obj
 	@echo ... X2_UlloaDeLaCalle.i
 	@echo ... X2_UlloaDeLaCalle.s
 	@echo ... copia.obj
 	@echo ... copia.i
 	@echo ... copia.s
+	@echo ... listasEnlazadas.obj
+	@echo ... listasEnlazadas.i
+	@echo ... listasEnlazadas.s
 	@echo ... shell.obj
 	@echo ... shell.i
 	@echo ... shell.s

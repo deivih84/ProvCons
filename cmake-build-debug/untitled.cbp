@@ -76,13 +76,13 @@
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="C:/Users/forex/CLionProjects/ProvCons/X22_UlloaDeLaCalle.c">
-			<Option target="untitled"/>
-		</Unit>
 		<Unit filename="C:/Users/forex/CLionProjects/ProvCons/X2_UlloaDeLaCalle.c">
 			<Option target="untitled"/>
 		</Unit>
 		<Unit filename="C:/Users/forex/CLionProjects/ProvCons/copia.c">
+			<Option target="untitled"/>
+		</Unit>
+		<Unit filename="C:/Users/forex/CLionProjects/ProvCons/listasEnlazadas.c">
 			<Option target="untitled"/>
 		</Unit>
 		<Unit filename="C:/Users/forex/CLionProjects/ProvCons/shell.c">
