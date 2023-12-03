@@ -41,14 +41,15 @@ typedef struct {
     int C;
     int in;               // Índice de escritura en el búfer
     int out;              // Índice de lectura en el búfer
-    Producto *buffer;     // Búfer circular
     TotalProductos totalProductos; // Registro del total de productos
     ConsumidorInfo* listaConsumidores; // Lista enlazada para almacenar información del consumidor
 } SharedData;
 
 // Variable de condición para la sincronización entre proveedor y consumidor
 pthread_cond_t cond_proveedor = PTHREAD_COND_INITIALIZER;
-sem_t semaforoProveedor, semaforoBufer, semaforoLista;
+sem_t semaforoFichero, semaforoBufer, semaforoLista, contadorBuffer;
+Producto *buffer, *listaEnlazada;
+int contBuffer = 0;
 
 void proveedorFunc(void *data);
 
@@ -105,15 +106,17 @@ int main(int argc, char *argv[]) {
     // Crear estructuras de datos compartidas
     sharedData.in = 0;
     sharedData.out = 0;
-    sharedData.buffer = (Producto *) malloc(sharedData.T * sizeof(Producto));
-    if (sharedData.buffer == NULL) {
-        free(sharedData.buffer);
+    buffer = (Producto *) malloc(sharedData.T * sizeof(Producto));
+    if (buffer == NULL) {
+        free(buffer);
         fprintf(stderr, "Error al asignar memoria para el búfer compartido.\n");
         return -1;
     }
     sharedData.listaConsumidores = NULL; // Inicializar la lista de consumidores ////
-    sem_init(semaforoProveedor, 0, 1);
+    sem_init(semaforoFichero, 0, 1);
     sem_init(semaforoBufer, 0, 1);
+    sem_init(semaforoLista, 0, 1);
+
 
     // Crear hilo del proveedor
     pthread_t proveedorThread;
@@ -133,7 +136,7 @@ int main(int argc, char *argv[]) {
     outputFile = fopen(sharedData.fichDestino, "a");
     if (outputFile == NULL) {
         fprintf(stderr, "Error al abrir el archivo de salida.\n");
-        free(sharedData.buffer);
+        free(buffer);
         return -1;
     }
 
@@ -152,9 +155,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Destruir semáforos y liberar memoria
-    sem_destroy(&semaforoProveedor);
+    sem_destroy(&semaforoFichero);
     sem_destroy(&semaforoBufer);
-    free(sharedData.buffer);
+    free(buffer);
 
     return 0;
 }
@@ -176,17 +179,17 @@ void proveedorFunc(void *data) {
         if (esTipoValido(c)) {
             // Procesar productos válidos
             // Incluir semáforo de exclusión mutua para la escritura en el búfer
-            sem_wait(&semaforoProveedor);
+            sem_wait(&semaforoFichero);
             // Escribir en el búfer
-            sharedData->buffer[sharedData->in].tipo = c;
-            sharedData->buffer[sharedData->in].proveedorID = sharedData->P;
+            buffer[sharedData->in].tipo = c;
+            buffer[sharedData->in].proveedorID = sharedData->P;
             sharedData->in = (sharedData->in + 1) % sharedData->T;
             // Incrementar contador de productos válidos
             productosValidos++;
             // Actualizar registro de productos
             totalProductos.total[c - 'a']++;
             // Liberar semáforo de exclusión mutua
-            sem_post(&semaforoProveedor);
+            sem_post(&semaforoFichero);
         } else {
             // Procesar productos inválidos
             productosInvalidos++;
@@ -198,7 +201,7 @@ void proveedorFunc(void *data) {
     outputFile = fopen(sharedData->fichDestino, "a");
     if (outputFile == NULL) {
         fprintf(stderr, "Error al abrir el archivo de salida del proveedor %d.\n", sharedData->P);
-        free(sharedData->buffer);
+        free(buffer);
         return;
     }
 
@@ -222,6 +225,8 @@ void consumidorFunc(void *data) {
     SharedData *sharedData = (SharedData *) data;
     int consumidorID = 0, bandera = 0;
     FILE *outputFile;
+    int contadorProductos = 0;
+    Producto productoConsumido;
 
     ConsumidorInfo* consumidor = (ConsumidorInfo*)malloc(sizeof(ConsumidorInfo));
     consumidor->consumidorID = consumidorID;
@@ -233,16 +238,16 @@ void consumidorFunc(void *data) {
     while (bandera!=1) {
         sem_wait(semaforoBufer);
 
+        // Leer del buffer
+        sem_wait(contadorBuffer);
+        productoConsumido = buffer[contBuffer];
+        contBuffer = (contBuffer + 1) % sharedData->T;
+        sem_post(contadorBuffer);
 
-
-        // Leer del búfer
-        Producto productoConsumido = sharedData->buffer[sharedData->out];
-        sharedData->out = (sharedData->out + 1) % sharedData->T;
-
-        // Incrementar contador de productos consumidos
-        sharedData->totalProductos.total[productoConsumido.tipo - 'a']++;
-        sharedData->totalProductos.total[productoConsumido.proveedorID]++;
-        sharedData->totalProductos.total['j' - 'a' + 1]++;
+        // Escribe en la lista el producto leido del buffer
+        sem_wait(semaforoLista);
+        listaEnlazada[contBuffer] = productoConsumido;
+        sem_post(semaforoLista);
 
         // Actualizar registro de productos consumidos por tipo y proveedor
         consumidor->productosConsumidosPorTipo[productoConsumido.tipo - 'a']++;
@@ -255,7 +260,6 @@ void consumidorFunc(void *data) {
             bandera = 1; // Salir del bucle si se han consumido todos los productos
         }
     }
-
     // Salir de la función del consumidor
     pthread_exit(NULL);
 }

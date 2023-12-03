@@ -54,3 +54,17 @@ Productos Válidos: 25. De los cuales se han insertado:
 2 de tipo "h".
 1 de tipo "i".
 3 de tipo "j".
+Proveedor: 1
+Productos procesados: 68.
+Productos Inválidos: 43
+Productos Válidos: 25. De los cuales se han insertado:
+6 de tipo "a".
+3 de tipo "b".
+2 de tipo "c".
+6 de tipo "d".
+0 de tipo "e".
+0 de tipo "f".
+2 de tipo "g".
+2 de tipo "h".
+1 de tipo "i".
+3 de tipo "j".
