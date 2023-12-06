@@ -214,13 +214,13 @@ void proveedorFunc(SharedData *sharedData) {
         return;
     }
 
-    fprintf(outputFile, "Proveedor: %d\n", proveedorID);
-    fprintf(outputFile, "Productos procesados: %d\n", productosLeidos);
-    fprintf(outputFile, "Productos Inválidos: %d\n", productosInvalidos);
-    fprintf(outputFile, "Productos Válidos: %d. De los cuales se han insertado:\n", productosValidos);
+    fprintf(outputFile, "Proveedor: %d.\n", proveedorID);
+    fprintf(outputFile, "   Productos procesados: %d.\n", productosLeidos);
+    fprintf(outputFile, "   Productos Inválidos: %d.\n", productosInvalidos);
+    fprintf(outputFile, "   Productos Válidos: %d. De los cuales se han insertado:\n", productosValidos);
 
     for (char tipo = 'a'; tipo <= 'j'; tipo++) {
-        fprintf(outputFile, "%d de tipo \"%c\".\n", totalProductos.total[tipo - 'a'], tipo);
+        fprintf(outputFile, "     %d de tipo \"%c\".\n", totalProductos.total[tipo - 'a'], tipo);
     }
 
     // Cerrar el archivo de salida
@@ -278,11 +278,11 @@ void facturadorFunc(SharedData* sharedData) {
     while (listaConsumidores != NULL) {
         // Contadores de productos, uno por tipos y uno por consumidores
 
-        fprintf(outputFile, "\nConsumidor: %d\n", i);
+        fprintf(outputFile, "\nCliente consumidor: %d\n", i);
 
-        fprintf(outputFile, "Productos Consumidos: %d. De los cuales:\n", listaConsumidores->productosConsumidos);
+        fprintf(outputFile, "  Productos consumidos: %d. De los cuales:\n", listaConsumidores->productosConsumidos);
         for (int j = 0; j < ('j' - 'a' + 1); ++j) {
-            fprintf(outputFile, "Producto tipo \"%c\": %d\n", (char) (j + 'a'),
+            fprintf(outputFile, "     Producto tipo \"%c\": %d\n", (char) (j + 'a'),
                     listaConsumidores->productosConsumidosPorTipo[j]);
         }
         listaConsumidores = listaConsumidores->siguiente;
