@@ -10,6 +10,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "C:/Users/forex/CLionProjects/ProvCons/X2_UlloaDeLaCalle.c" "CMakeFiles/untitled.dir/X2_UlloaDeLaCalle.c.obj" "gcc" "CMakeFiles/untitled.dir/X2_UlloaDeLaCalle.c.obj.d"
   "C:/Users/forex/CLionProjects/ProvCons/copia.c" "CMakeFiles/untitled.dir/copia.c.obj" "gcc" "CMakeFiles/untitled.dir/copia.c.obj.d"
+  "C:/Users/forex/CLionProjects/ProvCons/correccion.c" "CMakeFiles/untitled.dir/correccion.c.obj" "gcc" "CMakeFiles/untitled.dir/correccion.c.obj.d"
   "C:/Users/forex/CLionProjects/ProvCons/listasEnlazadas.c" "CMakeFiles/untitled.dir/listasEnlazadas.c.obj" "gcc" "CMakeFiles/untitled.dir/listasEnlazadas.c.obj.d"
   "C:/Users/forex/CLionProjects/ProvCons/shell.c" "CMakeFiles/untitled.dir/shell.c.obj" "gcc" "CMakeFiles/untitled.dir/shell.c.obj.d"
   )

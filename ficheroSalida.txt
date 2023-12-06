@@ -1,14 +1,27 @@
-Proveedor: 1
-Productos procesados: 68
-Productos Inválidos: 43
-Productos Válidos: 25. De los cuales se han insertado:
-6 de tipo "a".
-3 de tipo "b".
-2 de tipo "c".
-6 de tipo "d".
+Proveedor: 0
+Productos procesados: 60
+Productos Inválidos: 20
+Productos Válidos: 40. De los cuales se han insertado:
+20 de tipo "a".
+0 de tipo "b".
+0 de tipo "c".
+20 de tipo "d".
 0 de tipo "e".
 0 de tipo "f".
-2 de tipo "g".
-2 de tipo "h".
-1 de tipo "i".
-3 de tipo "j".
+0 de tipo "g".
+0 de tipo "h".
+0 de tipo "i".
+0 de tipo "j".
+
+Consumidor: 0
+Productos Consumidos: 40. De los cuales:
+Producto tipo "a": 20
+Producto tipo "b": 0
+Producto tipo "c": 0
+Producto tipo "d": 20
+Producto tipo "e": 0
+Producto tipo "f": 0
+Producto tipo "g": 0
+Producto tipo "h": 0
+Producto tipo "i": 0
+Producto tipo "j": 0

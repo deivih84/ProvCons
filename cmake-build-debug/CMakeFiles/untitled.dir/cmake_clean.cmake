@@ -3,6 +3,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/untitled.dir/X2_UlloaDeLaCalle.c.obj.d"
   "CMakeFiles/untitled.dir/copia.c.obj"
   "CMakeFiles/untitled.dir/copia.c.obj.d"
+  "CMakeFiles/untitled.dir/correccion.c.obj"
+  "CMakeFiles/untitled.dir/correccion.c.obj.d"
   "CMakeFiles/untitled.dir/listasEnlazadas.c.obj"
   "CMakeFiles/untitled.dir/listasEnlazadas.c.obj.d"
   "CMakeFiles/untitled.dir/shell.c.obj"

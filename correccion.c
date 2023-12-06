@@ -44,7 +44,8 @@ typedef struct {
 } SharedData;
 
 // Variables GLOBALES :)
-sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoContadorBuffer;
+pthread_cond_t cond_proveedor = PTHREAD_COND_INITIALIZER;
+sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoContadorBuffer, semaforoSharedData;
 Producto *buffer;
 int contBuffer = 0;
 ConsumidorInfo *listaConsumidores;
@@ -55,23 +56,26 @@ void consumidorFunc(SharedData *data);
 
 ConsumidorInfo *initListaProducto(ConsumidorInfo *lista);
 
-ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int *productosConsumidosPorTipo, int ID);
+ConsumidorInfo *agregarConsumidor(ConsumidorInfo *producto, int productosConsumidos, int *productosConsumidosPorTipo, int ID);
 
-void facturadorFunc(SharedData* sharedData);
+void facturador(SharedData* sharedData);
 
 bool esTipoValido(char c);
 
 bool esCadena(char *string);
 
-//printf("hola1");fflush(NULL); // PRINT PARA DEBUG
 
 int main(int argc, char *argv[]) {
     char *path = argv[1];
-    int arg3, arg4, arg5;
+    // Esto esta MUY MAL. Así no se hace lo he explicado muchas veces.
+    printf("Hola\n");fflush(NULL);
+    int arg3 = atoi(argv[3]), arg4 = atoi(argv[4]), arg5 = atoi(argv[5]);
+    printf("Hola1\n");fflush(NULL);
+    exit(1);
     SharedData sharedData;
+    // Llamada a código en medio de la definición de parámetros ERROR SERIO!!!
     listaConsumidores = initListaProducto(listaConsumidores);
     FILE *file, *outputFile;
-    pthread_t proveedorThread, consumidorThread, facturadorThread;
 
 
     // Verificación de la cantidad de argumentos
@@ -81,32 +85,25 @@ int main(int argc, char *argv[]) {
     }
 
     //Verificación parámetros
-
-    //Verificar si los parámetros pasados son válidos o no. Si no, se pasa -1 para salir en el próximo if
-    arg3 = (!esCadena(argv[3])) ? atoi(argv[3]) : -1;
-    arg4 = (!esCadena(argv[4])) ? atoi(argv[4]) : -1;
-    arg5 = (!esCadena(argv[5])) ? atoi(argv[5]) : -1;
-
-    if (arg3 <= 0 || arg3 > 5000) {
+    if (esCadena(argv[3]) || arg3 <= 0 || arg3 > 5000) {
         fprintf(stderr, "Error: T debe ser un entero positivo menor o igual a 5000.\n");
         return -1;
     }
-    if (arg4 <= 0 || arg4 > 7) {
+    if (esCadena(argv[4]) || arg4 <= 0 || arg4 > 7) {
         fprintf(stderr, "Error: P debe ser un entero positivo menor o igual a 7.\n");
         return -1;
     }
-    if (arg5 <= 0 || arg5 > 1000) {
+    if (esCadena(argv[5]) || arg5 <= 0 || arg5 > 1000) {
         fprintf(stderr, "Error: C debe ser un entero positivo menor o igual a 1000.\n");
         return -1;
     }
-
-    //AQUÍ HABRÁ QUE MODIFICAR COSAS PARA MÁS DE UN PROVEEDOR
     sprintf(path, "%s\\proveedor%d.dat", argv[1], 0);
     file = fopen(path, "r");
     if (file == NULL) {
         fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", sharedData.P);
     }
 
+    printf("Hola1");fflush(NULL);
 
     sharedData.ruta = path; // Ruta de los archivos de entrada
     sharedData.fichDestino = argv[2]; // Nombre del fichero destino.
@@ -133,37 +130,36 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+// MAL!!! el argumento se pasa por referencia se para por referencia!!!
     sem_init(&semaforoFichero, 0, 1);
     sem_init(&semaforoBuffer, 0, 1);
     sem_init(&semaforoLista, 0, 1);
     sem_init(&semaforoContadorBuffer, 0, 1);
+    sem_init(&semaforoSharedData, 0, 1);
+
 
 
     // Crear hilo del proveedor
+    pthread_t proveedorThread;  // VARIABLES DEFINIDAS EN MEDIO DEL CODIGO!!!!
     pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, &sharedData);
-    printf("%s", "Hilo Proveedor lanzado.\n");
 
     // Crear hilo del consumidor
+    pthread_t consumidorThread;
     pthread_create(&consumidorThread, NULL, (void *) consumidorFunc, &sharedData);
-    printf("%s", "Hilo Consumidor lanzado.\n");
-
 
     // Esperar a que los hilos terminen
     pthread_join(proveedorThread, NULL);
     pthread_join(consumidorThread, NULL);
 
-
-    // Crear hilo del facturadorFunc
-    pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, &sharedData);
-    printf("%s", "Hilo Facturador lanzado.\n");
-
-    pthread_join(facturadorThread, NULL);
+    // Facturador
+    facturador(&sharedData);
 
 
     // Destruir semáforos y liberar memoria
     sem_destroy(&semaforoFichero);
     sem_destroy(&semaforoBuffer);
     sem_destroy(&semaforoLista);
+    sem_destroy(&semaforoSharedData);
     sem_destroy(&semaforoContadorBuffer);
 
     fclose(outputFile);
@@ -177,15 +173,29 @@ void proveedorFunc(SharedData *sharedData) {
     int productosLeidos = 0, productosValidos = 0, productosInvalidos = 0, proveedorID = 0;
     TotalProductos totalProductos = {{0}};
 
+
+
+    ////////////////////////////////////////////////////
+    printf("%s\n", sharedData->ruta);fflush(NULL);
+    printf("debug1\n");fflush(NULL);
+
     // Abrir el archivo de entrada del proveedor
     file = fopen(sharedData->ruta, "r");
+
+    printf("debug2\n");fflush(NULL);
+    ////////////////////////////////////////////////////
+
+
 
     // Leer y procesar productos del archivo
     while ((c = (char) fgetc(file)) != EOF) {
         productosLeidos++;
 
+        printf("hola1");fflush(NULL);
+
         if (esTipoValido(c)) {
             // Incluir semáforo para escritura en el búfer
+// MAL!!! el argumento se pasa por referencia se para por referencia!!!
             sem_wait(&semaforoBuffer);
             // Escribir en el búfer
             buffer[sharedData->in].tipo = c;
@@ -201,9 +211,9 @@ void proveedorFunc(SharedData *sharedData) {
             // Procesar productos inválidos
             productosInvalidos++;
         }
-        //buffer[sharedData->in + 1].tipo = '7'; //Fin del contenido del buffer
     }
     fclose(file); // Cerrar el archivo
+// MAL!!! el argumento se pasa por referencia se para por referencia!!!
     sem_post(&semaforoFichero);
 
     // Escribir resultados en el archivo de salida
@@ -214,7 +224,7 @@ void proveedorFunc(SharedData *sharedData) {
         return;
     }
 
-    fprintf(outputFile, "Proveedor: %d\n", proveedorID);
+    fprintf(outputFile, "Proveedor: %d\n", sharedData->P);
     fprintf(outputFile, "Productos procesados: %d\n", productosLeidos);
     fprintf(outputFile, "Productos Inválidos: %d\n", productosInvalidos);
     fprintf(outputFile, "Productos Válidos: %d. De los cuales se han insertado:\n", productosValidos);
@@ -225,14 +235,17 @@ void proveedorFunc(SharedData *sharedData) {
 
     // Cerrar el archivo de salida
     fclose(outputFile);
+
+    // Avisar al consumidor que ha terminado
+    pthread_cond_signal(&cond_proveedor);
 }
 
 void consumidorFunc(SharedData *sharedData) {
     int consumidorID = 0, bandera = 0, numeroProductosConsumidosPorTipo['j' - 'a' + 1], numeroProductosConsumidos = 0;
     Producto productoConsumido;
 
-    // Incializar numeroProductosConsumidosPorTipo[] //No sabes lo que hay en la memoria cuando vas a escribir.
-    for (int i = 0; i <= 9; ++i) {
+    // Incializar numeroProductosConsumidosPorTipo[]
+    for (int i = 0; i < 9; ++i) {
         numeroProductosConsumidosPorTipo[i] = 0;
     }
 
@@ -240,63 +253,82 @@ void consumidorFunc(SharedData *sharedData) {
     while (bandera != 1) {
 
         // Leer del buffer
+// MAL!!! el argumento se pasa por referencia se para por referencia!!!
         sem_wait(&semaforoContadorBuffer);
         sem_wait(&semaforoBuffer);
         productoConsumido = buffer[contBuffer];
 
+// MAL!!! el argumento se pasa por referencia se para por referencia!!!
+        sem_wait(&semaforoSharedData);
+        if (contBuffer+1 >= sharedData->T || esTipoValido(productoConsumido.tipo)) {bandera = 1;}
         sem_post(&semaforoBuffer);
 
         numeroProductosConsumidos++; // Incremento de contador general
-        numeroProductosConsumidosPorTipo[productoConsumido.tipo - 'a']++; // Incremento de contador del tipo correspondiente
+// QUE ES PRINTF_S???? para depurar SIEMPRE printf + fflush
+// EL TIPO ES %d no %s
+        printf("%d", productoConsumido.tipo); fflush(NULL);
+        printf("%d", productoConsumido.proveedorID); fflush(NULL);
+        numeroProductosConsumidosPorTipo[productoConsumido.tipo + 'a']++; // Incremento de contador del tipo correspondiente
 
         //Se actualiza el contador del buffer
-
-        sem_wait(&semaforoBuffer);
-
         contBuffer = (contBuffer + 1) % sharedData->T;
-        bandera = (contBuffer >= sharedData->T || !esTipoValido(buffer[contBuffer + 1].tipo)) ? 1 : 0;
-
-        sem_post(&semaforoBuffer);
+// MAL!!! el argumento se pasa por referencia se para por referencia!!!
+        sem_post(&semaforoSharedData);
         sem_post(&semaforoContadorBuffer);
     }
 
     // Escribe en la lista el producto leido del buffer (lentamente perdiendo la cordura)
+// MAL!!! el argumento se pasa por referencia se para por referencia!!!
     sem_wait(&semaforoLista);
-    listaConsumidores = agregarConsumidor(listaConsumidores, numeroProductosConsumidos,numeroProductosConsumidosPorTipo, consumidorID); //hay que pasarle prodConsPorTipo
+    printf("%d, %d, %d\n", numeroProductosConsumidos, numeroProductosConsumidosPorTipo[0], numeroProductosConsumidosPorTipo[2]);
+    listaConsumidores = agregarConsumidor(listaConsumidores, numeroProductosConsumidos, numeroProductosConsumidosPorTipo, productoConsumido.proveedorID); //hay que pasarle prodConsPorTipo
+// MAL!!! el argumento se pasa por referencia se para por referencia!!!
     sem_post(&semaforoLista);
+
+    // Salir de la función del consumidor
+    pthread_exit(NULL);
 }
 
 
-void facturadorFunc(SharedData* sharedData) {
+void facturador(SharedData* sharedData) {
     FILE *outputFile;
-    int i = 0;
+    int arrayConsumidores[sharedData->C]['j' - 'a' + 1], productosPorContador[sharedData->C];
 
-    sem_wait(&semaforoFichero);
-    outputFile = fopen(sharedData->fichDestino, "a");
+// QUE ES PRINTF_S???? para depurar SIEMPRE printf + fflush
+    printf("Hola");fflush(NULL);
+// MAL!!! el argumento se pasa por referencia se para por referencia!!!
     sem_wait(&semaforoLista);
+
     // Agregar a la lista
-    while (listaConsumidores != NULL) {
+/*    while (listaConsumidores != NULL) {
+        printf("%c,%d\n", listaConsumidores->tipo, listaConsumidores->proveedorID);
         // Contadores de productos, uno por tipos y uno por consumidores
-
-        fprintf(outputFile, "\nConsumidor: %d\n", i);
-
-        fprintf(outputFile, "Productos Consumidos: %d. De los cuales:\n", listaConsumidores->productosConsumidos);
-        for (int j = 0; j < ('j' - 'a' + 1); ++j) {
-            fprintf(outputFile, "Producto tipo \"%c\": %d\n", (char) (j + 'a'),
-                    listaConsumidores->productosConsumidosPorTipo[j]);
-        }
+        arrayConsumidores[listaConsumidores->proveedorID][listaConsumidores->tipo - 'a']++;
+        productosPorContador[listaConsumidores->proveedorID]++;
         listaConsumidores = listaConsumidores->siguiente;
-        i++;
+    }*/
+    outputFile = fopen(sharedData->fichDestino, "a");
+
+
+    for (int i = 0; i < sharedData->C; ++i) {
+        fprintf(outputFile, "Consumidor: %d\n", i);
+        fprintf(outputFile, "Productos Consumidos: %d. De los cuales:\n", productosPorContador[i]);
+
+        for (int j = 0; j < ('j' - 'a' + 1); ++j) {
+            fprintf(outputFile, "Producto tipo \"%c\": %d\n", (char)(j+'a'), arrayConsumidores[i][j]);
+        }
+
     }
-    sem_post(&semaforoFichero);
+
+
+
+
 
 }
 
-
-bool esTipoValido(char c) { // Devuelve True si está entre a y j (incluidas)
+bool esTipoValido(char c) {
     return (c >= 'a' && c <= 'j');
 }
-
 
 bool esCadena(char *cadena) {
     for (int i = 0; i < strlen(cadena); ++i) {
@@ -307,32 +339,27 @@ bool esCadena(char *cadena) {
     return false; // Devuelve 0 si es una cadena de dígitos
 }
 
-
-ConsumidorInfo *initListaProducto(ConsumidorInfo *lista) {
+ConsumidorInfo *initListaProducto(ConsumidorInfo *lista){
     lista = NULL;
     return lista;
 }
 
-
-ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int productosConsumidosPorTipo[], int ID) {
+ConsumidorInfo *agregarConsumidor(ConsumidorInfo *producto, int productosConsumidos, int *productosConsumidosPorTipo, int ID) {
     ConsumidorInfo *nuevoConsumidor;
     ConsumidorInfo *aux;
     nuevoConsumidor = (ConsumidorInfo *) malloc(sizeof(ConsumidorInfo));
     nuevoConsumidor->productosConsumidos = productosConsumidos;
-
-    // Se copia el array de productos consumidos por tipo
-    memcpy(nuevoConsumidor->productosConsumidosPorTipo, productosConsumidosPorTipo,sizeof(nuevoConsumidor->productosConsumidosPorTipo));
-
+    memcpy(nuevoConsumidor->productosConsumidosPorTipo, productosConsumidosPorTipo, sizeof(nuevoConsumidor->productosConsumidosPorTipo));
     nuevoConsumidor->consumidorID = ID;
     nuevoConsumidor->siguiente = NULL;
-    if (nodo == NULL) {
-        nodo = nuevoConsumidor;
+    if (producto == NULL){
+        producto = nuevoConsumidor;
     } else {
-        aux = nodo;
+        aux = producto;
         while (aux->siguiente != NULL) {
             aux = aux->siguiente;
         }
         aux->siguiente = nuevoConsumidor;
     }
-    return nodo;
+    return producto;
 }
