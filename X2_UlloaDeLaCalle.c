@@ -141,6 +141,12 @@ int main(int argc, char *argv[]) {
 
     // Crear hilo del proveedor
     pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, &sharedData);
+//    if (pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, &sharedData) != 0) {
+//        fprintf(stderr, "Error al crear el hilo del proveedor.\n");
+//        fclose(outputFile);
+//        free(buffer);
+//        return -1;
+//    }
     printf("%s", "Hilo Proveedor lanzado.\n");
 
     // Crear hilo del consumidor
@@ -155,9 +161,21 @@ int main(int argc, char *argv[]) {
 
     // Crear hilo del facturadorFunc
     pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, &sharedData);
+//    if (pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, &sharedData) != 0) {
+//        fprintf(stderr, "Error al crear el hilo del facturador.\n");
+//        fclose(outputFile);
+//        free(buffer);
+//        return -1;
+//    }
     printf("%s", "Hilo Facturador lanzado.\n");
 
-    pthread_join(facturadorThread, NULL);
+//    pthread_join(facturadorThread, NULL);
+//    if (pthread_join(facturadorThread, NULL) != 0) {
+//        fprintf(stderr, "Error al esperar el hilo del facturador.\n");
+//        fclose(outputFile);
+//        free(buffer);
+//        return -1;
+//    }
 
 
     // Destruir semáforos y liberar memoria
@@ -174,7 +192,7 @@ int main(int argc, char *argv[]) {
 void proveedorFunc(SharedData *sharedData) {
     FILE *file, *outputFile;
     char c;
-    int productosLeidos = 0, productosValidos = 0, productosInvalidos = 0, proveedorID = 0;
+    int productosLeidos = 0, productosValidos = 0, productosNoValidos = 0, proveedorID = 0;
     TotalProductos totalProductos = {{0}};
 
     // Abrir el archivo de entrada del proveedor
@@ -199,7 +217,7 @@ void proveedorFunc(SharedData *sharedData) {
             totalProductos.total[c - 'a']++;
         } else {
             // Procesar productos inválidos
-            productosInvalidos++;
+            productosNoValidos++;
         }
         //buffer[sharedData->in + 1].tipo = '7'; //Fin del contenido del buffer
     }
@@ -216,7 +234,7 @@ void proveedorFunc(SharedData *sharedData) {
 
     fprintf(outputFile, "Proveedor: %d.\n", proveedorID);
     fprintf(outputFile, "   Productos procesados: %d.\n", productosLeidos);
-    fprintf(outputFile, "   Productos Inválidos: %d.\n", productosInvalidos);
+    fprintf(outputFile, "   Productos Inválidos: %d.\n", productosNoValidos);
     fprintf(outputFile, "   Productos Válidos: %d. De los cuales se han insertado:\n", productosValidos);
 
     for (char tipo = 'a'; tipo <= 'j'; tipo++) {

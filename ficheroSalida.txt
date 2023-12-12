@@ -1,6 +1,6 @@
 Proveedor: 0.
-   Productos procesados: 60.
-   Productos Inválidos: 20.
+   Productos procesados: 61.
+   Productos Inválidos: 21.
    Productos Válidos: 40. De los cuales se han insertado:
      20 de tipo "a".
      0 de tipo "b".
