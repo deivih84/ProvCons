@@ -211,7 +211,6 @@ void proveedorFunc(SharedData *sharedData) {
             buffer[sharedData->in].tipo = c;
             sem_post(&hayDato); //////SEMAFORO hayDato
 
-            printf("%c", c); fflush(NULL); ////////////
 
             buffer[sharedData->in].proveedorID = proveedorID;
             sharedData->in = (sharedData->in + 1) % sharedData->T;
@@ -225,10 +224,13 @@ void proveedorFunc(SharedData *sharedData) {
             totalProductos.total[c - 'a']++;
 
         } else if (c == EOF){ // Si es el final del fichero pone una 'F' para decir que ha acabado.
+            ///////////////////////////////// No escribe F
             sem_wait(&semaforoBuffer);
 
             buffer[sharedData->in].tipo = 'F';
             buffer[sharedData->in].proveedorID = proveedorID;
+            sharedData->in = (sharedData->in + 1) % sharedData->T;
+
             sem_post(&hayDato); //////SEMAFORO hayDato
 
 
@@ -238,6 +240,7 @@ void proveedorFunc(SharedData *sharedData) {
             // Procesar productos inválidos
             productosNoValidos++;
         }
+        printf("%c", c); fflush(NULL); ////////////
         //buffer[sharedData->in + 1].tipo = '7'; //Fin del contenido del buffer
     }
     fclose(file); // Cerrar el archivo
@@ -306,10 +309,8 @@ void consumidorFunc(SharedData *sharedData) {
 
         contBuffer = (contBuffer + 1) % sharedData->T;
 
-        if(buffer[contBuffer].tipo == 'F') {
-            bandera = 1;
-        }
-//        bandera = (buffer[contBuffer].tipo == 'F') ? 1 : 0;
+
+        bandera = (buffer[contBuffer].tipo == 'F') ? 1 : 0;
 
 
         sem_post(&semaforoBuffer);
