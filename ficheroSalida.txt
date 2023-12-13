@@ -14,11 +14,11 @@ Proveedor: 0.
      0 de tipo "j".
 
 Cliente consumidor: 0
-  Productos consumidos: 40. De los cuales:
+  Productos consumidos: 39. De los cuales:
      Producto tipo "a": 20
      Producto tipo "b": 0
      Producto tipo "c": 0
-     Producto tipo "d": 20
+     Producto tipo "d": 19
      Producto tipo "e": 0
      Producto tipo "f": 0
      Producto tipo "g": 0
