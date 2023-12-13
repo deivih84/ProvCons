@@ -44,7 +44,7 @@ typedef struct {
 } SharedData;
 
 // Variables GLOBALES :)
-sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoContadorBuffer;
+sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoContadorBuffer, hayDato;
 Producto *buffer;
 int contBuffer = 0;
 ConsumidorInfo *listaConsumidores;
@@ -137,6 +137,7 @@ int main(int argc, char *argv[]) {
     sem_init(&semaforoBuffer, 0, 1);
     sem_init(&semaforoLista, 0, 1);
     sem_init(&semaforoContadorBuffer, 0, 1);
+    sem_init(&hayDato, 0, 0);
 
 
     // Crear hilo del proveedor
@@ -183,6 +184,7 @@ int main(int argc, char *argv[]) {
     sem_destroy(&semaforoBuffer);
     sem_destroy(&semaforoLista);
     sem_destroy(&semaforoContadorBuffer);
+    sem_destroy(&hayDato);
 
     fclose(outputFile);
     free(buffer);
@@ -207,14 +209,31 @@ void proveedorFunc(SharedData *sharedData) {
             sem_wait(&semaforoBuffer);
             // Escribir en el búfer
             buffer[sharedData->in].tipo = c;
+            sem_post(&hayDato); //////SEMAFORO hayDato
+
+            printf("%c", c); fflush(NULL); ////////////
+
             buffer[sharedData->in].proveedorID = proveedorID;
             sharedData->in = (sharedData->in + 1) % sharedData->T;
 
             sem_post(&semaforoBuffer);
+
+
             // Incrementar contador de productos válidos
             productosValidos++;
             // Actualizar registro de productos
             totalProductos.total[c - 'a']++;
+
+        } else if (c == EOF){ // Si es el final del fichero pone una 'F' para decir que ha acabado.
+            sem_wait(&semaforoBuffer);
+
+            buffer[sharedData->in].tipo = 'F';
+            buffer[sharedData->in].proveedorID = proveedorID;
+            sem_post(&hayDato); //////SEMAFORO hayDato
+
+
+            sem_post(&semaforoBuffer);
+
         } else {
             // Procesar productos inválidos
             productosNoValidos++;
@@ -254,14 +273,27 @@ void consumidorFunc(SharedData *sharedData) {
         numeroProductosConsumidosPorTipo[i] = 0;
     }
 
+    printf(""); fflush(NULL);
+
+    int i = 0;
     // Consumir productos del búfer
     while (bandera != 1) {
+
+        /////////////////////////////
+        printf("%d", i);
+        sem_wait(&hayDato);
+        /////////////////////////////
+
 
         // Leer del buffer
         sem_wait(&semaforoContadorBuffer);
         sem_wait(&semaforoBuffer);
         productoConsumido = buffer[contBuffer];
 
+        printf("_%c", buffer[contBuffer].tipo); fflush(NULL);
+
+
+        sem_post(&semaforoContadorBuffer);
         sem_post(&semaforoBuffer);
 
         numeroProductosConsumidos++; // Incremento de contador general
@@ -270,12 +302,19 @@ void consumidorFunc(SharedData *sharedData) {
         //Se actualiza el contador del buffer
 
         sem_wait(&semaforoBuffer);
+        sem_wait(&semaforoContadorBuffer);
 
         contBuffer = (contBuffer + 1) % sharedData->T;
-        bandera = (contBuffer >= sharedData->T || !esTipoValido(buffer[contBuffer + 1].tipo)) ? 1 : 0;
+
+        if(buffer[contBuffer].tipo == 'F') {
+            bandera = 1;
+        }
+//        bandera = (buffer[contBuffer].tipo == 'F') ? 1 : 0;
+
 
         sem_post(&semaforoBuffer);
         sem_post(&semaforoContadorBuffer);
+        i++; /////////////////////////////////
     }
 
     // Escribe en la lista el producto leido del buffer (lentamente perdiendo la cordura)
@@ -292,6 +331,7 @@ void facturadorFunc(SharedData* sharedData) {
     sem_wait(&semaforoFichero);
     outputFile = fopen(sharedData->fichDestino, "a");
     sem_wait(&semaforoLista);
+
     // Agregar a la lista
     while (listaConsumidores != NULL) {
         // Contadores de productos, uno por tipos y uno por consumidores
@@ -300,8 +340,7 @@ void facturadorFunc(SharedData* sharedData) {
 
         fprintf(outputFile, "  Productos consumidos: %d. De los cuales:\n", listaConsumidores->productosConsumidos);
         for (int j = 0; j < ('j' - 'a' + 1); ++j) {
-            fprintf(outputFile, "     Producto tipo \"%c\": %d\n", (char) (j + 'a'),
-                    listaConsumidores->productosConsumidosPorTipo[j]);
+            fprintf(outputFile, "     Producto tipo \"%c\": %d\n", (char) (j + 'a'), listaConsumidores->productosConsumidosPorTipo[j]);
         }
         listaConsumidores = listaConsumidores->siguiente;
         i++;
