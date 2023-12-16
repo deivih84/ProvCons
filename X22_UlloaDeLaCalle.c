@@ -43,7 +43,11 @@ typedef struct {
     TotalProductos totalProductos; // Registro del total de productos
 } SharedData;
 
+<<<<<<< HEAD
+// Variables GLOBALES :)
+=======
 // Variables globales
+>>>>>>> origin/master
 sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoContadorBuffer;
 Producto *buffer;
 int contBuffer = 0;
@@ -106,12 +110,20 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+<<<<<<< HEAD
+    //AQUÍ HABRÁ QUE MODIFICAR COSAS PARA MÁS DE UN PROVEEDOR
+=======
+>>>>>>> origin/master
     sprintf(path, "%s\\proveedor%d.dat", argv[1], 0);
     file = fopen(path, "r");
     if (file == NULL) {
         fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", sharedData.P);
     }
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> origin/master
     sharedData.ruta = path; // Ruta de los archivos de entrada
     sharedData.fichDestino = argv[2]; // Nombre del fichero destino.
     sharedData.T = arg3; // Tamaño del búfer circular.
@@ -145,6 +157,13 @@ int main(int argc, char *argv[]) {
 
     // Crear hilo del proveedor
     pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, &sharedData);
+<<<<<<< HEAD
+    printf("%s", "Hilo Proveedor lanzado.\n");
+
+    // Crear hilo del consumidor
+    for(indice=0;indice<sharedData.C;indice++){
+      pthread_create(&consumidorThread, NULL, (void *) consumidorFunc, &sharedData);
+=======
     if (pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, &sharedData) != 0) {
         fprintf(stderr, "Error al crear el hilo del proveedor.\n");
         fclose(outputFile);
@@ -162,12 +181,17 @@ int main(int argc, char *argv[]) {
         free(buffer);
         return -1;
       }
+>>>>>>> origin/master
       printf("%s", "Hilo Consumidor lanzado.\n");
     }
 
 
     // Esperar a que los hilos terminen
     pthread_join(proveedorThread, NULL);
+<<<<<<< HEAD
+    for(indice=0;indice<sharedData.C;indice++){
+      pthread_join(consumidorThread, NULL);
+=======
     if (pthread_join(proveedorThread, NULL) != 0) {
           fprintf(stderr, "Error al esperar el hilo del proveedor.\n");
           fclose(outputFile);
@@ -182,11 +206,17 @@ int main(int argc, char *argv[]) {
           free(buffer);
           return -1;
       }
+>>>>>>> origin/master
     }
 
 
     // Crear hilo del facturadorFunc
     pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, &sharedData);
+<<<<<<< HEAD
+    printf("%s", "Hilo Facturador lanzado.\n");
+
+    pthread_join(facturadorThread, NULL);
+=======
     if (pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, &sharedData) != 0) {
         fprintf(stderr, "Error al crear el hilo del facturador.\n");
         fclose(outputFile);
@@ -202,6 +232,7 @@ int main(int argc, char *argv[]) {
           free(buffer);
           return -1;
     }
+>>>>>>> origin/master
 
     fprintf(outputFile, "Total de productos consumidos: %d.\n", totalProductosConsumidos);
     for(indice=0; indice<sharedData.P;indice++){
@@ -223,17 +254,23 @@ int main(int argc, char *argv[]) {
 void proveedorFunc(SharedData *sharedData) {
     FILE *file, *outputFile;
     char c;
+<<<<<<< HEAD
+=======
     char tipo;
+>>>>>>> origin/master
     int productosLeidos = 0, productosValidos = 0, productosInvalidos = 0, proveedorID = 0;
     TotalProductos totalProductos = {{0}};
 
     // Abrir el archivo de entrada del proveedor
     file = fopen(sharedData->ruta, "r");
+<<<<<<< HEAD
+=======
     if (file == NULL) {
         fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", 0);
         free(buffer);
         return;
     }
+>>>>>>> origin/master
 
     // Leer y procesar productos del archivo
     while ((c = (char) fgetc(file)) != EOF) {
@@ -276,7 +313,11 @@ void proveedorFunc(SharedData *sharedData) {
     totalProductosConsumidos=totalProductosConsumidos + productosValidos;
     *productores[proveedorID]=productosValidos;
 
+<<<<<<< HEAD
+    for (char tipo = 'a'; tipo <= 'j'; tipo++) {
+=======
     for (tipo = 'a'; tipo <= 'j'; tipo++) {
+>>>>>>> origin/master
         fprintf(outputFile, "     %d de tipo \"%c\".\n", totalProductos.total[tipo - 'a'], tipo);
     }
 
@@ -285,11 +326,19 @@ void proveedorFunc(SharedData *sharedData) {
 }
 
 void consumidorFunc(SharedData *sharedData) {
+<<<<<<< HEAD
+    int consumidorID = 0, bandera = 0, numeroProductosConsumidosPorTipo['j' - 'a' + 1], numeroProductosConsumidos = 0;
+    Producto productoConsumido;
+
+    // Incializar numeroProductosConsumidosPorTipo[] //No sabes lo que hay en la memoria cuando vas a escribir.
+    for (int i = 0; i <= 9; ++i) {
+=======
     int consumidorID = 0, bandera = 0, numeroProductosConsumidosPorTipo['j' - 'a' + 1], numeroProductosConsumidos = 0, i;
     Producto productoConsumido;
 
     // Incializar numeroProductosConsumidosPorTipo[] No sabes lo que hay en la memoria cuando vas a escribir.
     for (i = 0; i <= 9; ++i) {
+>>>>>>> origin/master
         numeroProductosConsumidosPorTipo[i] = 0;
     }
 
@@ -317,7 +366,11 @@ void consumidorFunc(SharedData *sharedData) {
         sem_post(&semaforoContadorBuffer);
     }
 
+<<<<<<< HEAD
+    // Escribe en la lista el producto leido del buffer (lentamente perdiendo la cordura)
+=======
     // Escribe en la lista el producto leido del buffer
+>>>>>>> origin/master
     sem_wait(&semaforoLista);
     listaConsumidores = agregarConsumidor(listaConsumidores, numeroProductosConsumidos,numeroProductosConsumidosPorTipo, consumidorID); //hay que pasarle prodConsPorTipo
     sem_post(&semaforoLista);
@@ -326,7 +379,11 @@ void consumidorFunc(SharedData *sharedData) {
 
 void facturadorFunc(SharedData* sharedData) {
     FILE *outputFile;
+<<<<<<< HEAD
+    int i = 0;
+=======
     int i = 0, j;
+>>>>>>> origin/master
 
     sem_wait(&semaforoFichero);
     outputFile = fopen(sharedData->fichDestino, "a");
@@ -338,7 +395,11 @@ void facturadorFunc(SharedData* sharedData) {
         fprintf(outputFile, "\nCliente consumidor: %d\n", i);
 
         fprintf(outputFile, "  Productos consumidos: %d. De los cuales:\n", listaConsumidores->productosConsumidos);
+<<<<<<< HEAD
+        for (int j = 0; j < ('j' - 'a' + 1); ++j) {
+=======
         for (j = 0; j < ('j' - 'a' + 1); ++j) {
+>>>>>>> origin/master
             fprintf(outputFile, "     Producto tipo \"%c\": %d\n", (char) (j + 'a'),
                     listaConsumidores->productosConsumidosPorTipo[j]);
         }
@@ -360,8 +421,12 @@ bool esTipoValido(char c) { // Devuelve True si está entre a y j (incluidas)
 
 
 bool esCadena(char *cadena) {
+<<<<<<< HEAD
+    for (int i = 0; i < strlen(cadena); ++i) {
+=======
     int i;
     for (i = 0; i < strlen(cadena); ++i) {
+>>>>>>> origin/master
         if (!isdigit(cadena[i])) {
             return true; // Devuelve 1 si no es una cadena de dígitos
         }
@@ -396,6 +461,9 @@ ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos,
         }
         aux->siguiente = nuevoConsumidor;
     }
+<<<<<<< HEAD
+=======
     free(nuevoConsumidor);
+>>>>>>> origin/master
     return nodo;
 }
