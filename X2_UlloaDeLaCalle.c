@@ -193,6 +193,7 @@ int main(int argc, char *argv[]) {
 
 void proveedorFunc(SharedData *sharedData) {
     FILE *file, *outputFile;
+    bool bandera = true;
     char c;
     int productosLeidos = 0, productosValidos = 0, productosNoValidos = 0, proveedorID = 0;
     TotalProductos totalProductos = {{0}};
@@ -201,7 +202,8 @@ void proveedorFunc(SharedData *sharedData) {
     file = fopen(sharedData->ruta, "r");
 
     // Leer y procesar productos del archivo
-    while ((c = (char) fgetc(file)) != EOF) {
+    while (bandera) {
+        c = (char) fgetc(file);
         productosLeidos++;
 
         if (esTipoValido(c)) {
@@ -227,21 +229,22 @@ void proveedorFunc(SharedData *sharedData) {
             ///////////////////////////////// No escribe F
             sem_wait(&semaforoBuffer);
 
+
             buffer[sharedData->in].tipo = 'F';
             buffer[sharedData->in].proveedorID = proveedorID;
             sharedData->in = (sharedData->in + 1) % sharedData->T;
 
+            printf(" _____________FIN de lineaaaa___________ ");
             sem_post(&hayDato); //////SEMAFORO hayDato
 
 
             sem_post(&semaforoBuffer);
+            bandera = false;
 
         } else {
             // Procesar productos inválidos
             productosNoValidos++;
         }
-        printf("%c", c); fflush(NULL); ////////////
-        //buffer[sharedData->in + 1].tipo = '7'; //Fin del contenido del buffer
     }
     fclose(file); // Cerrar el archivo
     sem_post(&semaforoFichero);
