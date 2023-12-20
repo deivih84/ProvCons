@@ -24,7 +24,7 @@ typedef struct {
 } TotalProductos;
 
 // Estructura para almacenar la información del consumidor
-typedef struct nodo {
+typedef struct nodo { //CAMBIAR, HACE FALTA LA INFO DE CADA PRODUCTOR EN UN ARRAY, no un nodo por productor
     int consumidorID;
     int productosConsumidos;
     int productosConsumidosPorTipo['j' - 'a' + 1];
@@ -44,7 +44,7 @@ typedef struct {
 } SharedData;
 
 // Variables GLOBALES :)
-sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoContadorBuffer, hayDato;
+sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoContadorBuffer, hayDato, CONSUMIDORTERMINADO;
 Producto *buffer;
 int contBuffer = 0;
 ConsumidorInfo *listaConsumidores;
@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
     // Crear estructuras de datos compartidas
     sharedData.in = 0;
     sharedData.out = 0;
-    buffer = malloc(sharedData.T * sizeof(Producto));
+    buffer = malloc((sharedData.T) * sizeof(Producto)); // CALLOOOOOC
     if (buffer == NULL) {
         free(buffer);
         fprintf(stderr, "Error al asignar memoria para el búfer compartido.\n");
@@ -204,7 +204,7 @@ void proveedorFunc(SharedData *sharedData) {
     // Leer y procesar productos del archivo
     while (bandera) {
         c = (char) fgetc(file);
-        productosLeidos++;
+//        productosLeidos++;
 
         if (esTipoValido(c)) {
             // Incluir semáforo para escritura en el búfer
@@ -215,6 +215,8 @@ void proveedorFunc(SharedData *sharedData) {
 
 
             buffer[sharedData->in].proveedorID = proveedorID;
+//            printf("%c ", buffer[sharedData->in].tipo); //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
             sharedData->in = (sharedData->in + 1) % sharedData->T;
 
             sem_post(&semaforoBuffer);
@@ -224,17 +226,17 @@ void proveedorFunc(SharedData *sharedData) {
             productosValidos++;
             // Actualizar registro de productos
             totalProductos.total[c - 'a']++;
+            productosLeidos++;
+
 
         } else if (c == EOF){ // Si es el final del fichero pone una 'F' para decir que ha acabado.
-            ///////////////////////////////// No escribe F
             sem_wait(&semaforoBuffer);
 
 
             buffer[sharedData->in].tipo = 'F';
             buffer[sharedData->in].proveedorID = proveedorID;
-            sharedData->in = (sharedData->in + 1) % sharedData->T;
 
-            printf(" _____________FIN de lineaaaa___________ ");
+//            printf(" _____________FIN de lineaaaa___________ ");
             sem_post(&hayDato); //////SEMAFORO hayDato
 
 
@@ -244,6 +246,8 @@ void proveedorFunc(SharedData *sharedData) {
         } else {
             // Procesar productos inválidos
             productosNoValidos++;
+            productosLeidos++;
+
         }
     }
     fclose(file); // Cerrar el archivo
@@ -286,21 +290,22 @@ void consumidorFunc(SharedData *sharedData) {
     while (bandera != 1) {
 
         /////////////////////////////
-        printf("%d", i);
         sem_wait(&hayDato);
         /////////////////////////////
 
 
         // Leer del buffer
-        sem_wait(&semaforoContadorBuffer);
         sem_wait(&semaforoBuffer);
+        sem_wait(&semaforoContadorBuffer);
+
         productoConsumido = buffer[contBuffer];
-
-        printf("_%c", buffer[contBuffer].tipo); fflush(NULL);
-
 
         sem_post(&semaforoContadorBuffer);
         sem_post(&semaforoBuffer);
+
+        printf("|%d|", contBuffer);
+        printf("_%c ", productoConsumido.tipo); //fflush(NULL);
+
 
         numeroProductosConsumidos++; // Incremento de contador general
         numeroProductosConsumidosPorTipo[productoConsumido.tipo - 'a']++; // Incremento de contador del tipo correspondiente
@@ -316,9 +321,8 @@ void consumidorFunc(SharedData *sharedData) {
         bandera = (buffer[contBuffer].tipo == 'F') ? 1 : 0;
 
 
-        sem_post(&semaforoBuffer);
         sem_post(&semaforoContadorBuffer);
-        i++; /////////////////////////////////
+        sem_post(&semaforoBuffer);
     }
 
     // Escribe en la lista el producto leido del buffer (lentamente perdiendo la cordura)
