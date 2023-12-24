@@ -46,7 +46,7 @@ typedef struct {
 // Variables GLOBALES :)
 sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoContadorBuffer, hayDato, CONSUMIDORTERMINADO;
 Producto *buffer;
-int contBuffer = 0;
+int contBuffer = 0, tamBuffer, nProveedores, nConsumidores;
 ConsumidorInfo *listaConsumidores;
 
 void proveedorFunc(SharedData *data);
@@ -67,7 +67,6 @@ bool esCadena(char *string);
 
 int main(int argc, char *argv[]) {
     char *path = argv[1];
-    int arg3, arg4, arg5;
     SharedData sharedData;
     listaConsumidores = initListaProducto(listaConsumidores);
     FILE *file, *outputFile;
@@ -83,19 +82,19 @@ int main(int argc, char *argv[]) {
     //Verificación parámetros
 
     //Verificar si los parámetros pasados son válidos o no. Si no, se pasa -1 para salir en el próximo if
-    arg3 = (!esCadena(argv[3])) ? atoi(argv[3]) : -1;
-    arg4 = (!esCadena(argv[4])) ? atoi(argv[4]) : -1;
-    arg5 = (!esCadena(argv[5])) ? atoi(argv[5]) : -1;
+    tamBuffer = (!esCadena(argv[3])) ? atoi(argv[3]) : -1;
+    nProveedores = (!esCadena(argv[4])) ? atoi(argv[4]) : -1;
+    nConsumidores = (!esCadena(argv[5])) ? atoi(argv[5]) : -1;
 
-    if (arg3 <= 0 || arg3 > 5000) {
+    if (tamBuffer <= 0 || tamBuffer > 5000) {
         fprintf(stderr, "Error: T debe ser un entero positivo menor o igual a 5000.\n");
         return -1;
     }
-    if (arg4 <= 0 || arg4 > 7) {
+    if (nProveedores <= 0 || nProveedores > 7) {
         fprintf(stderr, "Error: P debe ser un entero positivo menor o igual a 7.\n");
         return -1;
     }
-    if (arg5 <= 0 || arg5 > 1000) {
+    if (nConsumidores <= 0 || nConsumidores > 1000) {
         fprintf(stderr, "Error: C debe ser un entero positivo menor o igual a 1000.\n");
         return -1;
     }
@@ -110,14 +109,14 @@ int main(int argc, char *argv[]) {
 
     sharedData.ruta = path; // Ruta de los archivos de entrada
     sharedData.fichDestino = argv[2]; // Nombre del fichero destino.
-    sharedData.T = arg3; // Tamaño del búfer circular.
-    sharedData.P = arg4; // Número total de proveedores.
-    sharedData.C = arg5; // Número total de clientes.
+    sharedData.T = tamBuffer; // Tamaño del búfer circular.
+    sharedData.P = nProveedores; // Número total de proveedores.
+    sharedData.C = nConsumidores; // Número total de clientes.
 
     // Crear estructuras de datos compartidas
     sharedData.in = 0;
     sharedData.out = 0;
-    buffer = malloc((sharedData.T) * sizeof(Producto)); // CALLOOOOOC
+    buffer = malloc((tamBuffer) * sizeof(Producto)); // CALLOOOOOC
     if (buffer == NULL) {
         free(buffer);
         fprintf(stderr, "Error al asignar memoria para el búfer compartido.\n");
@@ -283,8 +282,6 @@ void consumidorFunc(SharedData *sharedData) {
         numeroProductosConsumidosPorTipo[i] = 0;
     }
 
-    printf(""); fflush(NULL);
-
     int i = 0;
     // Consumir productos del búfer
     while (bandera != 1) {
@@ -315,9 +312,9 @@ void consumidorFunc(SharedData *sharedData) {
         sem_wait(&semaforoBuffer);
         sem_wait(&semaforoContadorBuffer);
 
-        contBuffer = (contBuffer + 1) % sharedData->T;
+        contBuffer = (contBuffer + 1) % tamBuffer;
 
-
+        //Se da por finalizada la ejecución de todos los
         bandera = (buffer[contBuffer].tipo == 'F') ? 1 : 0;
 
 
