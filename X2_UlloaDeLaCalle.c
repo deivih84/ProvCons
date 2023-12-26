@@ -46,6 +46,7 @@ typedef struct {
 // Variables GLOBALES :)
 sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoProdBuffer, semaforoConsBuffer, hayDato, CONSUMIDORTERMINADO;
 Producto *buffer;
+char *path;
 int itProdBuffer = 0, itConsBuffer = 0, tamBuffer, nProveedores, nConsumidores;
 ConsumidorInfo *listaConsumidores;
 
@@ -60,7 +61,7 @@ bool esCadena(char *string);
 
 
 int main(int argc, char *argv[]) {
-    char *path = argv[1];
+    path = argv[1];
     SharedData sharedData;
     listaConsumidores = initListaProducto(listaConsumidores);
     FILE *file, *outputFile;
@@ -94,11 +95,11 @@ int main(int argc, char *argv[]) {
     }
 
     //AQUÍ HABRÁ QUE MODIFICAR COSAS PARA MÁS DE UN PROVEEDOR
-    sprintf(path, "%s\\proveedor%d.dat", argv[1], 0);
-    file = fopen(path, "r");
-    if (file == NULL) {
-        fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", sharedData.P);
-    }
+    //sprintf(path, "%s\\proveedor%d.dat", argv[1], 0);
+//    file = fopen(path, "r");
+//    if (file == NULL) {
+//        fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", sharedData.P);
+//    }
 
 
     sharedData.ruta = path; // Ruta de los archivos de entrada
@@ -117,13 +118,17 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    //Prueba apertura fichDestino
-    outputFile = fopen(sharedData.fichDestino, "w");
-    if (outputFile == NULL) {
-        fprintf(stderr, "Error al abrir el archivo de salida.\n");
-        fclose(outputFile);
-        free(buffer);
-        return -1;
+    //Prueba apertura de TODOS los ficheros para proveedores
+    printf(" %d ", nProveedores);
+    for (int i = 0; i < nProveedores; i++) {
+        sprintf(path, "%s\\proveedor%d.dat", argv[1], i);
+        file = fopen(path, "r");
+        if (file == NULL) {
+            fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", i);
+            fclose(file);
+            free(buffer);
+            return -1;
+        }
     }
 
     sem_init(&semaforoFichero, 0, 1);
@@ -135,13 +140,10 @@ int main(int argc, char *argv[]) {
 
 
     // Crear hilo del proveedor
-    pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, &sharedData);
-//    if (pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, &sharedData) != 0) {
-//        fprintf(stderr, "Error al crear el hilo del proveedor.\n");
-//        fclose(outputFile);
-//        free(buffer);
-//        return -1;
-//    }
+    for (int i = 0; i < nProveedores; ++i) {
+        pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, &sharedData);
+    }
+
     printf("%s", "Hilo Proveedor lanzado.\n");
 
     // Crear hilo del consumidor
@@ -158,21 +160,9 @@ int main(int argc, char *argv[]) {
 
     // Crear hilo del facturadorFunc
     pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, &sharedData);
-//    if (pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, &sharedData) != 0) {
-//        fprintf(stderr, "Error al crear el hilo del facturador.\n");
-//        fclose(outputFile);
-//        free(buffer);
-//        return -1;
-//    }
+
     printf("%s", "Hilo Facturador lanzado.\n");
 
-//    pthread_join(facturadorThread, NULL);
-//    if (pthread_join(facturadorThread, NULL) != 0) {
-//        fprintf(stderr, "Error al esperar el hilo del facturador.\n");
-//        fclose(outputFile);
-//        free(buffer);
-//        return -1;
-//    }
 
 
     // Destruir semáforos y liberar memoria
@@ -190,12 +180,14 @@ int main(int argc, char *argv[]) {
 void proveedorFunc(SharedData *sharedData) {
     FILE *file, *outputFile;
     bool bandera = true;
-    char c;
+    char c, *fichPath = NULL;
     int productosLeidos = 0, productosValidos = 0, productosNoValidos = 0, proveedorID = 0, itBuffer;
     TotalProductos totalProductos = {{0}};
 
     // Abrir el archivo de entrada del proveedor
-    file = fopen(sharedData->ruta, "r");
+    sprintf(fichPath, "%s\\proveedor%d.dat", path, 0);
+
+    file = fopen(fichPath, "r");
 
     // Leer y procesar productos del archivo
     while (bandera) {
@@ -215,7 +207,7 @@ void proveedorFunc(SharedData *sharedData) {
             buffer[itProdBuffer].proveedorID = proveedorID;
 //            printf("%c ", buffer[sharedData->in].tipo); ////
 
-            itProdBuffer = (itProdBuffer + 1) % sharedData->T;
+            itProdBuffer = (itProdBuffer + 1) % tamBuffer;
 
             sem_post(&semaforoProdBuffer);
             sem_post(&semaforoBuffer);
