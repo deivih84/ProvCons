@@ -48,9 +48,9 @@ typedef struct {
 =======
 // Variables globales
 >>>>>>> origin/master
-sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoContadorBuffer;
+sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoConsBuffer;
 Producto *buffer;
-int contBuffer = 0;
+int itConsBuffer = 0;
 ConsumidorInfo *listaConsumidores;
 int *productores[7];
 int totalProductosConsumidos = 0;
@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
     sem_init(&semaforoFichero, 0, 1);
     sem_init(&semaforoBuffer, 0, 1);
     sem_init(&semaforoLista, 0, 1);
-    sem_init(&semaforoContadorBuffer, 0, 1);
+    sem_init(&semaforoConsBuffer, 0, 1);
 
 
     // Crear hilo del proveedor
@@ -244,7 +244,7 @@ int main(int argc, char *argv[]) {
     sem_destroy(&semaforoFichero);
     sem_destroy(&semaforoBuffer);
     sem_destroy(&semaforoLista);
-    sem_destroy(&semaforoContadorBuffer);
+    sem_destroy(&semaforoConsBuffer);
 
     fclose(outputFile);
     free(buffer);
@@ -346,9 +346,9 @@ void consumidorFunc(SharedData *sharedData) {
     while (bandera != 1) {
 
         // Leer del buffer
-        sem_wait(&semaforoContadorBuffer);
+        sem_wait(&semaforoConsBuffer);
         sem_wait(&semaforoBuffer);
-        productoConsumido = buffer[contBuffer];
+        productoConsumido = buffer[itConsBuffer];
 
         sem_post(&semaforoBuffer);
 
@@ -359,11 +359,11 @@ void consumidorFunc(SharedData *sharedData) {
 
         sem_wait(&semaforoBuffer);
 
-        contBuffer = (contBuffer + 1) % sharedData->T;
-        bandera = (contBuffer >= sharedData->T || !esTipoValido(buffer[contBuffer + 1].tipo)) ? 1 : 0;
+        itConsBuffer = (itConsBuffer + 1) % sharedData->T;
+        bandera = (itConsBuffer >= sharedData->T || !esTipoValido(buffer[itConsBuffer + 1].tipo)) ? 1 : 0;
 
         sem_post(&semaforoBuffer);
-        sem_post(&semaforoContadorBuffer);
+        sem_post(&semaforoConsBuffer);
     }
 
 <<<<<<< HEAD

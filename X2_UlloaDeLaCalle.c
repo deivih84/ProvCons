@@ -44,26 +44,20 @@ typedef struct {
 } SharedData;
 
 // Variables GLOBALES :)
-sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoContadorBuffer, hayDato, CONSUMIDORTERMINADO;
+sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoProdBuffer, semaforoConsBuffer, hayDato, CONSUMIDORTERMINADO;
 Producto *buffer;
-int contBuffer = 0, tamBuffer, nProveedores, nConsumidores;
+int itProdBuffer = 0, itConsBuffer = 0, tamBuffer, nProveedores, nConsumidores;
 ConsumidorInfo *listaConsumidores;
 
+// Declaración de funciones :D
 void proveedorFunc(SharedData *data);
-
 void consumidorFunc(int consumidorID);
-
 ConsumidorInfo *initListaProducto(ConsumidorInfo *lista);
-
 ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int *productosConsumidosPorTipo, int ID);
-
 void facturadorFunc(SharedData* sharedData);
-
 bool esTipoValido(char c);
-
 bool esCadena(char *string);
 
-//printf("hola1");fflush(NULL); // PRINT PARA DEBUG
 
 int main(int argc, char *argv[]) {
     char *path = argv[1];
@@ -135,7 +129,8 @@ int main(int argc, char *argv[]) {
     sem_init(&semaforoFichero, 0, 1);
     sem_init(&semaforoBuffer, 0, 1);
     sem_init(&semaforoLista, 0, 1);
-    sem_init(&semaforoContadorBuffer, 0, 1);
+    sem_init(&semaforoProdBuffer, 0, 1);
+    sem_init(&semaforoConsBuffer, 0, 1);
     sem_init(&hayDato, 0, 0);
 
 
@@ -184,7 +179,7 @@ int main(int argc, char *argv[]) {
     sem_destroy(&semaforoFichero);
     sem_destroy(&semaforoBuffer);
     sem_destroy(&semaforoLista);
-    sem_destroy(&semaforoContadorBuffer);
+    sem_destroy(&semaforoConsBuffer);
     sem_destroy(&hayDato);
 
     fclose(outputFile);
@@ -196,7 +191,7 @@ void proveedorFunc(SharedData *sharedData) {
     FILE *file, *outputFile;
     bool bandera = true;
     char c;
-    int productosLeidos = 0, productosValidos = 0, productosNoValidos = 0, proveedorID = 0;
+    int productosLeidos = 0, productosValidos = 0, productosNoValidos = 0, proveedorID = 0, itBuffer;
     TotalProductos totalProductos = {{0}};
 
     // Abrir el archivo de entrada del proveedor
@@ -208,18 +203,21 @@ void proveedorFunc(SharedData *sharedData) {
 //        productosLeidos++;
 
         if (esTipoValido(c)) {
-            // Incluir semáforo para escritura en el búfer
+            // Semáforos para escritura en el búfer
             sem_wait(&semaforoBuffer);
+            sem_wait(&semaforoProdBuffer);
+
             // Escribir en el búfer
-            buffer[sharedData->in].tipo = c;
+            buffer[itProdBuffer].tipo = c;
             sem_post(&hayDato); //////SEMAFORO hayDato
 
 
-            buffer[sharedData->in].proveedorID = proveedorID;
-//            printf("%c ", buffer[sharedData->in].tipo); //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            buffer[itProdBuffer].proveedorID = proveedorID;
+//            printf("%c ", buffer[sharedData->in].tipo); ////
 
-            sharedData->in = (sharedData->in + 1) % sharedData->T;
+            itProdBuffer = (itProdBuffer + 1) % sharedData->T;
 
+            sem_post(&semaforoProdBuffer);
             sem_post(&semaforoBuffer);
 
 
@@ -232,15 +230,16 @@ void proveedorFunc(SharedData *sharedData) {
 
         } else if (c == EOF){ // Si es el final del fichero pone una 'F' para decir que ha acabado.
             sem_wait(&semaforoBuffer);
+            sem_wait(&semaforoProdBuffer);
 
-
-            buffer[sharedData->in].tipo = 'F';
-            buffer[sharedData->in].proveedorID = proveedorID;
+            buffer[itProdBuffer].tipo = 'F';
+            buffer[itProdBuffer].proveedorID = proveedorID;
 
             printf(" _____________FIN de lineaaaa___________ ");
             sem_post(&hayDato); //////SEMAFORO hayDato
 
 
+            sem_wait(&semaforoProdBuffer);
             sem_post(&semaforoBuffer);
             bandera = false;
 
@@ -294,14 +293,14 @@ void consumidorFunc(int consumidorID) {
 
         // Leer del buffer
         sem_wait(&semaforoBuffer);
-        sem_wait(&semaforoContadorBuffer);
+        sem_wait(&semaforoConsBuffer);
 
-        productoConsumido = buffer[contBuffer];
+        productoConsumido = buffer[itConsBuffer];
 
-        sem_post(&semaforoContadorBuffer);
+        sem_post(&semaforoConsBuffer);
         sem_post(&semaforoBuffer);
 
-        printf("|%d|", contBuffer);
+        printf("|%d|", itConsBuffer);
         printf("_%c ", productoConsumido.tipo);
 
 
@@ -311,15 +310,15 @@ void consumidorFunc(int consumidorID) {
         //Se actualiza el contador del buffer
 
         sem_wait(&semaforoBuffer);
-        sem_wait(&semaforoContadorBuffer);
+        sem_wait(&semaforoConsBuffer);
 
-        contBuffer = (contBuffer + 1) % tamBuffer;
+        itConsBuffer = (itConsBuffer + 1) % tamBuffer;
 
         //Se da por finalizada la ejecución de todos los
-        bandera = (buffer[contBuffer].tipo == 'F') ? 1 : 0;
+        bandera = (buffer[itConsBuffer].tipo == 'F') ? 1 : 0;
 
 
-        sem_post(&semaforoContadorBuffer);
+        sem_post(&semaforoConsBuffer);
         sem_post(&semaforoBuffer);
     }
 

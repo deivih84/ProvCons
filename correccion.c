@@ -45,9 +45,9 @@ typedef struct {
 
 // Variables GLOBALES :)
 pthread_cond_t cond_proveedor = PTHREAD_COND_INITIALIZER;
-sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoContadorBuffer, semaforoSharedData;
+sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoConsBuffer, semaforoSharedData;
 Producto *buffer;
-int contBuffer = 0;
+int itConsBuffer = 0;
 ConsumidorInfo *listaConsumidores;
 
 void proveedorFunc(SharedData *data);
@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
     sem_init(&semaforoFichero, 0, 1);
     sem_init(&semaforoBuffer, 0, 1);
     sem_init(&semaforoLista, 0, 1);
-    sem_init(&semaforoContadorBuffer, 0, 1);
+    sem_init(&semaforoConsBuffer, 0, 1);
     sem_init(&semaforoSharedData, 0, 1);
 
 
@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
     sem_destroy(&semaforoBuffer);
     sem_destroy(&semaforoLista);
     sem_destroy(&semaforoSharedData);
-    sem_destroy(&semaforoContadorBuffer);
+    sem_destroy(&semaforoConsBuffer);
 
     fclose(outputFile);
     free(buffer);
@@ -254,13 +254,13 @@ void consumidorFunc(SharedData *sharedData) {
 
         // Leer del buffer
 // MAL!!! el argumento se pasa por referencia se para por referencia!!!
-        sem_wait(&semaforoContadorBuffer);
+        sem_wait(&semaforoConsBuffer);
         sem_wait(&semaforoBuffer);
-        productoConsumido = buffer[contBuffer];
+        productoConsumido = buffer[itConsBuffer];
 
 // MAL!!! el argumento se pasa por referencia se para por referencia!!!
         sem_wait(&semaforoSharedData);
-        if (contBuffer+1 >= sharedData->T || esTipoValido(productoConsumido.tipo)) {bandera = 1;}
+        if (itConsBuffer + 1 >= sharedData->T || esTipoValido(productoConsumido.tipo)) { bandera = 1;}
         sem_post(&semaforoBuffer);
 
         numeroProductosConsumidos++; // Incremento de contador general
@@ -271,10 +271,10 @@ void consumidorFunc(SharedData *sharedData) {
         numeroProductosConsumidosPorTipo[productoConsumido.tipo + 'a']++; // Incremento de contador del tipo correspondiente
 
         //Se actualiza el contador del buffer
-        contBuffer = (contBuffer + 1) % sharedData->T;
+        itConsBuffer = (itConsBuffer + 1) % sharedData->T;
 // MAL!!! el argumento se pasa por referencia se para por referencia!!!
         sem_post(&semaforoSharedData);
-        sem_post(&semaforoContadorBuffer);
+        sem_post(&semaforoConsBuffer);
     }
 
     // Escribe en la lista el producto leido del buffer (lentamente perdiendo la cordura)
