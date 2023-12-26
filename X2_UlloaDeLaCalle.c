@@ -51,7 +51,7 @@ ConsumidorInfo *listaConsumidores;
 
 void proveedorFunc(SharedData *data);
 
-void consumidorFunc(SharedData *data);
+void consumidorFunc(int consumidorID);
 
 ConsumidorInfo *initListaProducto(ConsumidorInfo *lista);
 
@@ -150,7 +150,9 @@ int main(int argc, char *argv[]) {
     printf("%s", "Hilo Proveedor lanzado.\n");
 
     // Crear hilo del consumidor
-    pthread_create(&consumidorThread, NULL, (void *) consumidorFunc, &sharedData);
+    for (int i = 0; i < nConsumidores; ++i) {
+        pthread_create(&consumidorThread, NULL, (void *) consumidorFunc, &i);
+    }
     printf("%s", "Hilo Consumidor lanzado.\n");
 
 
@@ -235,7 +237,7 @@ void proveedorFunc(SharedData *sharedData) {
             buffer[sharedData->in].tipo = 'F';
             buffer[sharedData->in].proveedorID = proveedorID;
 
-//            printf(" _____________FIN de lineaaaa___________ ");
+            printf(" _____________FIN de lineaaaa___________ ");
             sem_post(&hayDato); //////SEMAFORO hayDato
 
 
@@ -273,8 +275,8 @@ void proveedorFunc(SharedData *sharedData) {
     fclose(outputFile);
 }
 
-void consumidorFunc(SharedData *sharedData) {
-    int consumidorID = 0, bandera = 0, numeroProductosConsumidosPorTipo['j' - 'a' + 1], numeroProductosConsumidos = 0;
+void consumidorFunc(int consumidorID) {
+    int bandera = 0, numeroProductosConsumidosPorTipo['j' - 'a' + 1], numeroProductosConsumidos = 0;
     Producto productoConsumido;
 
     // Incializar numeroProductosConsumidosPorTipo[] //No sabes lo que hay en la memoria cuando vas a escribir.
@@ -282,7 +284,6 @@ void consumidorFunc(SharedData *sharedData) {
         numeroProductosConsumidosPorTipo[i] = 0;
     }
 
-    int i = 0;
     // Consumir productos del búfer
     while (bandera != 1) {
 
@@ -301,7 +302,7 @@ void consumidorFunc(SharedData *sharedData) {
         sem_post(&semaforoBuffer);
 
         printf("|%d|", contBuffer);
-        printf("_%c ", productoConsumido.tipo); //fflush(NULL);
+        printf("_%c ", productoConsumido.tipo);
 
 
         numeroProductosConsumidos++; // Incremento de contador general
