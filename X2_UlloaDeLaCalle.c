@@ -62,6 +62,7 @@ bool esCadena(char *string);
 
 int main(int argc, char *argv[]) {
     path = strdup(argv[1]);
+    fichDest = strdup(argv[2]);
     SharedData sharedData;
     listaConsumidores = initListaProducto(listaConsumidores);
     FILE *file, *outputFile;
@@ -107,8 +108,6 @@ int main(int argc, char *argv[]) {
     sharedData.T = tamBuffer; // Tamaño del búfer circular.
     sharedData.P = nProveedores; // Número total de proveedores.
     sharedData.C = nConsumidores; // Número total de clientes.
-
-    sprintf(fichDest, "%s\\%s", path, argv[2]);
 
 
     // Crear estructuras de datos compartidas
@@ -252,6 +251,8 @@ void proveedorFunc(SharedData *sharedData) {
 
 
     // Escribir resultados en el archivo de salida
+    sprintf(fichPath, "%s\\%s", fichPath, fichDest);
+
     outputFile = fopen(fichDest, "a");
     if (outputFile == NULL) {
         fprintf(stderr, "Error al abrir el archivo de salida del proveedor %d.\n", 0);
