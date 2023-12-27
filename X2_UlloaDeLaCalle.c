@@ -46,7 +46,7 @@ typedef struct {
 // Variables GLOBALES :)
 sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoProdBuffer, semaforoConsBuffer, hayDato, CONSUMIDORTERMINADO;
 Producto *buffer;
-char *path;
+char *path, *fichDest;
 int itProdBuffer = 0, itConsBuffer = 0, tamBuffer, nProveedores, nConsumidores;
 ConsumidorInfo *listaConsumidores;
 
@@ -61,7 +61,7 @@ bool esCadena(char *string);
 
 
 int main(int argc, char *argv[]) {
-    path = argv[1];
+    path = strdup(argv[1]);
     SharedData sharedData;
     listaConsumidores = initListaProducto(listaConsumidores);
     FILE *file, *outputFile;
@@ -108,6 +108,9 @@ int main(int argc, char *argv[]) {
     sharedData.P = nProveedores; // Número total de proveedores.
     sharedData.C = nConsumidores; // Número total de clientes.
 
+    sprintf(fichDest, "%s\\%s", path, argv[2]);
+
+
     // Crear estructuras de datos compartidas
     sharedData.in = 0;
     sharedData.out = 0;
@@ -119,7 +122,6 @@ int main(int argc, char *argv[]) {
     }
 
     //Prueba apertura de TODOS los ficheros para proveedores
-    printf(" %d ", nProveedores);
     for (int i = 0; i < nProveedores; i++) {
         sprintf(path, "%s\\proveedor%d.dat", argv[1], i);
         file = fopen(path, "r");
@@ -130,6 +132,7 @@ int main(int argc, char *argv[]) {
             return -1;
         }
     }
+    path = strdup(argv[1]);
 
     sem_init(&semaforoFichero, 0, 1);
     sem_init(&semaforoBuffer, 0, 1);
@@ -180,19 +183,21 @@ int main(int argc, char *argv[]) {
 void proveedorFunc(SharedData *sharedData) {
     FILE *file, *outputFile;
     bool bandera = true;
-    char c, *fichPath = NULL;
+    char c, *fichPath = strdup(path);
     int productosLeidos = 0, productosValidos = 0, productosNoValidos = 0, proveedorID = 0, itBuffer;
     TotalProductos totalProductos = {{0}};
 
+
+
     // Abrir el archivo de entrada del proveedor
-    sprintf(fichPath, "%s\\proveedor%d.dat", path, 0);
+    sprintf(fichPath, "%s\\proveedor%d.dat", fichPath, 0);
 
     file = fopen(fichPath, "r");
+
 
     // Leer y procesar productos del archivo
     while (bandera) {
         c = (char) fgetc(file);
-//        productosLeidos++;
 
         if (esTipoValido(c)) {
             // Semáforos para escritura en el búfer
@@ -245,8 +250,9 @@ void proveedorFunc(SharedData *sharedData) {
     fclose(file); // Cerrar el archivo
     sem_post(&semaforoFichero);
 
+
     // Escribir resultados en el archivo de salida
-    outputFile = fopen(sharedData->fichDestino, "w");
+    outputFile = fopen(fichDest, "a");
     if (outputFile == NULL) {
         fprintf(stderr, "Error al abrir el archivo de salida del proveedor %d.\n", 0);
         free(buffer);
