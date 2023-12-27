@@ -65,6 +65,7 @@ bool esCadena(char *string);
 int main(int argc, char *argv[]) {
     path = strdup(argv[1]);
     fichDest = strdup(argv[2]);
+    printf("ññññ %s ññññ",fichDest);
     SharedData sharedData;
     listaConsumidores = initListaProducto(listaConsumidores);
     int *arg[MAX_PROVEEDORES];
@@ -135,7 +136,19 @@ int main(int argc, char *argv[]) {
         }
         fclose(file);
     }
+    // Creado o limpieza del fichero de salida.
     path = strdup(argv[1]);
+    fichDest = strdup(argv[2]);
+
+    file = fopen(fichDest, "w");
+    if (file == NULL) {
+        fprintf(stderr, "Error al abrir el archivo salida.");
+        fclose(file);
+        free(buffer);
+        return -1;
+    }
+    fclose(file);
+
     fclose(file);
 
     sem_init(&semaforoFichero, 0, 1);
@@ -163,7 +176,9 @@ int main(int argc, char *argv[]) {
 
 
     // Esperar a que los hilos terminen
-    pthread_join(proveedorThread, NULL);
+    for (int i = 0; i < nProveedores; ++i) {
+        pthread_join(proveedorThread, NULL);
+    }
     pthread_join(consumidorThread, NULL);
 
 
@@ -190,7 +205,7 @@ void proveedorFunc (const int *arg) { //////////////////////////
     FILE *file, *outputFile;
     bool bandera = true;
     char c, *fichPath = calloc(255, sizeof(char));
-    int productosLeidos = 0, productosValidos = 0, productosNoValidos = 0, proveedorID = *arg-1, itBuffer;
+    int productosLeidos = 0, productosValidos = 0, productosNoValidos = 0, proveedorID = *arg-1;
     TotalProductos totalProductos = {{0}};
 
 
@@ -213,7 +228,7 @@ void proveedorFunc (const int *arg) { //////////////////////////
 
             // Semáforos para escritura en el búfer
             sem_wait(&semaforoBuffer);
-            sem_wait(&semaforoProdBuffer);
+            sem_wait(&semaforoProdBuffer); /////////////////////QUITAR PRODBUFFER CON EL DE BUFFER YA VALE
 
             // Escribir en el búfer
             buffer[itProdBuffer].tipo = c;
@@ -236,8 +251,8 @@ void proveedorFunc (const int *arg) { //////////////////////////
             productosLeidos++;
 
         } else if (c == EOF){ // Si es el final del fichero pone una 'F' para decir que ha acabado.
-            sem_wait(&semaforoBuffer);
             sem_wait(&semaforoProdBuffer);
+            sem_wait(&semaforoBuffer);
 
             buffer[itProdBuffer].tipo = 'F';
             buffer[itProdBuffer].proveedorID = proveedorID;
@@ -246,9 +261,8 @@ void proveedorFunc (const int *arg) { //////////////////////////
             sem_post(&hayDato); //////SEMAFORO hayDato
 
 
-            sem_wait(&semaforoProdBuffer);
             sem_post(&semaforoBuffer);
-            printf("  __AAAAAAAAAA__ "); ////////// ES SEMAFORO PRODBUFFER
+            sem_post(&semaforoProdBuffer);
             bandera = false;
 
         } else {
@@ -264,7 +278,7 @@ void proveedorFunc (const int *arg) { //////////////////////////
 
     // Escribir resultados en el archivo de salida
 
-    sprintf(fichPath, "%s\\%s", fichPath, fichDest);
+    sprintf(fichPath, "%s\\%s", path, fichDest);
 
     outputFile = fopen(fichDest, "a");
     if (outputFile == NULL) {
@@ -324,7 +338,7 @@ void consumidorFunc(int consumidorID) {
 
         sem_post(&semaforoConsBuffer);
         sem_post(&semaforoBuffer);
-        printf("__|__");
+        //printf("__|__");
     }
 
     // Escribe en la lista el producto leido del buffer (lentamente perdiendo la cordura)

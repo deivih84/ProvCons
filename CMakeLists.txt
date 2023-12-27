@@ -9,5 +9,4 @@ add_executable(untitled
         shell.c
         X2_UlloaDeLaCalle.c
         listasEnlazadas.c
-        correccion.c
 )
