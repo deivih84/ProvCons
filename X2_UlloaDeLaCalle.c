@@ -12,6 +12,8 @@
 
 #define MAX_COMMAND_LENGTH 800
 #define MAX_ARGUMENTS 5
+#define MAX_PROVEEDORES 7
+#define MAX_CONSUMIDORES 1000
 
 typedef struct {
     char tipo;
@@ -51,7 +53,7 @@ int itProdBuffer = 0, itConsBuffer = 0, tamBuffer, nProveedores, nConsumidores;
 ConsumidorInfo *listaConsumidores;
 
 // Declaración de funciones :D
-void proveedorFunc(SharedData *data);
+void proveedorFunc(const int *arg);
 void consumidorFunc(int consumidorID);
 ConsumidorInfo *initListaProducto(ConsumidorInfo *lista);
 ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int *productosConsumidosPorTipo, int ID);
@@ -65,9 +67,9 @@ int main(int argc, char *argv[]) {
     fichDest = strdup(argv[2]);
     SharedData sharedData;
     listaConsumidores = initListaProducto(listaConsumidores);
+    int *arg[MAX_PROVEEDORES];
     FILE *file, *outputFile;
     pthread_t proveedorThread, consumidorThread, facturadorThread;
-
 
     // Verificación de la cantidad de argumentos
     if (argc != 6) {
@@ -86,12 +88,12 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error: T debe ser un entero positivo menor o igual a 5000.\n");
         return -1;
     }
-    if (nProveedores <= 0 || nProveedores > 7) {
-        fprintf(stderr, "Error: P debe ser un entero positivo menor o igual a 7.\n");
+    if (nProveedores <= 0 || nProveedores > MAX_PROVEEDORES) {
+        fprintf(stderr, "Error: P debe ser un entero positivo menor o igual a %d.\n", MAX_PROVEEDORES);
         return -1;
     }
-    if (nConsumidores <= 0 || nConsumidores > 1000) {
-        fprintf(stderr, "Error: C debe ser un entero positivo menor o igual a 1000.\n");
+    if (nConsumidores <= 0 || nConsumidores > MAX_CONSUMIDORES) {
+        fprintf(stderr, "Error: C debe ser un entero positivo menor o igual a %d.\n", MAX_CONSUMIDORES);
         return -1;
     }
 
@@ -113,6 +115,7 @@ int main(int argc, char *argv[]) {
     // Crear estructuras de datos compartidas
     sharedData.in = 0;
     sharedData.out = 0;
+
     buffer = malloc((tamBuffer) * sizeof(Producto)); // CALLOOOOOC
     if (buffer == NULL) {
         free(buffer);
@@ -130,8 +133,10 @@ int main(int argc, char *argv[]) {
             free(buffer);
             return -1;
         }
+        fclose(file);
     }
     path = strdup(argv[1]);
+    fclose(file);
 
     sem_init(&semaforoFichero, 0, 1);
     sem_init(&semaforoBuffer, 0, 1);
@@ -142,14 +147,16 @@ int main(int argc, char *argv[]) {
 
 
     // Crear hilo del proveedor
-    for (int i = 0; i < nProveedores; ++i) {
-        pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, &sharedData);
+    for (int i = 0; i < nProveedores; i++) {
+        printf("!!%d!!", i);
+        arg[i] = malloc(sizeof(int));
+        pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, &i);
     }
 
     printf("%s", "Hilo Proveedor lanzado.\n");
 
     // Crear hilo del consumidor
-    for (int i = 0; i < nConsumidores; ++i) {
+    for (int i = 0; i < nConsumidores; i++) {
         pthread_create(&consumidorThread, NULL, (void *) consumidorFunc, &i);
     }
     printf("%s", "Hilo Consumidor lanzado.\n");
@@ -171,34 +178,39 @@ int main(int argc, char *argv[]) {
     sem_destroy(&semaforoFichero);
     sem_destroy(&semaforoBuffer);
     sem_destroy(&semaforoLista);
+    sem_destroy(&semaforoProdBuffer);
     sem_destroy(&semaforoConsBuffer);
     sem_destroy(&hayDato);
 
-    fclose(outputFile);
     free(buffer);
     return 0;
 }
 
-void proveedorFunc(SharedData *sharedData) {
+void proveedorFunc (const int *arg) { //////////////////////////
     FILE *file, *outputFile;
     bool bandera = true;
-    char c, *fichPath = strdup(path);
-    int productosLeidos = 0, productosValidos = 0, productosNoValidos = 0, proveedorID = 0, itBuffer;
+    char c, *fichPath = calloc(255, sizeof(char));
+    int productosLeidos = 0, productosValidos = 0, productosNoValidos = 0, proveedorID = *arg-1, itBuffer;
     TotalProductos totalProductos = {{0}};
 
 
 
     // Abrir el archivo de entrada del proveedor
-    sprintf(fichPath, "%s\\proveedor%d.dat", fichPath, 0);
+//    snprintf(fichPath, 255, "%s\\proveedor%d.dat", path, 0);
+    sprintf(fichPath, "%s\\proveedor%d.dat", path, proveedorID);
 
+    printf("%s  ", fichPath);
     file = fopen(fichPath, "r");
 
+    if (file == NULL){ printf("AAAAAAA");}
 
     // Leer y procesar productos del archivo
     while (bandera) {
         c = (char) fgetc(file);
 
         if (esTipoValido(c)) {
+            printf(" _%c%d_ ", c, proveedorID);
+
             // Semáforos para escritura en el búfer
             sem_wait(&semaforoBuffer);
             sem_wait(&semaforoProdBuffer);
@@ -223,7 +235,6 @@ void proveedorFunc(SharedData *sharedData) {
             totalProductos.total[c - 'a']++;
             productosLeidos++;
 
-
         } else if (c == EOF){ // Si es el final del fichero pone una 'F' para decir que ha acabado.
             sem_wait(&semaforoBuffer);
             sem_wait(&semaforoProdBuffer);
@@ -237,6 +248,7 @@ void proveedorFunc(SharedData *sharedData) {
 
             sem_wait(&semaforoProdBuffer);
             sem_post(&semaforoBuffer);
+            printf("  __AAAAAAAAAA__ "); ////////// ES SEMAFORO PRODBUFFER
             bandera = false;
 
         } else {
@@ -251,6 +263,7 @@ void proveedorFunc(SharedData *sharedData) {
 
 
     // Escribir resultados en el archivo de salida
+
     sprintf(fichPath, "%s\\%s", fichPath, fichDest);
 
     outputFile = fopen(fichDest, "a");
@@ -282,6 +295,7 @@ void consumidorFunc(int consumidorID) {
         numeroProductosConsumidosPorTipo[i] = 0;
     }
 
+
     // Consumir productos del búfer
     while (bandera != 1) {
 
@@ -296,29 +310,21 @@ void consumidorFunc(int consumidorID) {
 
         productoConsumido = buffer[itConsBuffer];
 
-        sem_post(&semaforoConsBuffer);
-        sem_post(&semaforoBuffer);
-
         printf("|%d|", itConsBuffer);
         printf("_%c ", productoConsumido.tipo);
-
 
         numeroProductosConsumidos++; // Incremento de contador general
         numeroProductosConsumidosPorTipo[productoConsumido.tipo - 'a']++; // Incremento de contador del tipo correspondiente
 
-        //Se actualiza el contador del buffer
-
-        sem_wait(&semaforoBuffer);
-        sem_wait(&semaforoConsBuffer);
-
         itConsBuffer = (itConsBuffer + 1) % tamBuffer;
 
-        //Se da por finalizada la ejecución de todos los
+        //Se da por finalizada la ejecución de un productor
         bandera = (buffer[itConsBuffer].tipo == 'F') ? 1 : 0;
 
 
         sem_post(&semaforoConsBuffer);
         sem_post(&semaforoBuffer);
+        printf("__|__");
     }
 
     // Escribe en la lista el producto leido del buffer (lentamente perdiendo la cordura)
