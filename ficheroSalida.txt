@@ -13,13 +13,13 @@ Proveedor: 1.
      0 de tipo "i".
      0 de tipo "j".
 Proveedor: 0.
-   Productos procesados: 60.
-   Productos Inválidos: 20.
-   Productos Válidos: 40. De los cuales se han insertado:
-     20 de tipo "a".
+   Productos procesados: 15.
+   Productos Inválidos: 5.
+   Productos Válidos: 10. De los cuales se han insertado:
+     5 de tipo "a".
      0 de tipo "b".
      0 de tipo "c".
-     20 de tipo "d".
+     5 de tipo "d".
      0 de tipo "e".
      0 de tipo "f".
      0 de tipo "g".

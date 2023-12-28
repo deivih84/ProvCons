@@ -49,14 +49,14 @@ typedef struct {
 sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoProdBuffer, semaforoConsBuffer, hayDato, CONSUMIDORTERMINADO;
 Producto *buffer;
 char *path, *fichDest;
-int itProdBuffer = 0, itConsBuffer = 0, tamBuffer, nProveedores, nConsumidores;
+int itProdBuffer = 0, itConsBuffer = 0, contProdsAcabados = 0, tamBuffer, nProveedores, nConsumidores;
 ConsumidorInfo *listaConsumidores;
 
 // Declaración de funciones :D
 void proveedorFunc(const int *arg);
-void consumidorFunc(int consumidorID);
+void consumidorFunc(const int *arg);
 ConsumidorInfo *initListaProducto(ConsumidorInfo *lista);
-ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int productosConsumidosPorTipo[], int ID);
+ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int productosConsumidosPorTipo[nProveedores][10], int ID);
 void facturadorFunc(SharedData* sharedData);
 bool esTipoValido(char c);
 bool esCadena(char *string);
@@ -159,27 +159,30 @@ int main(int argc, char *argv[]) {
     sem_init(&hayDato, 0, 0);
 
 
-    // Crear hilo del proveedor
+    // Crear hilos proveedor
     for (int i = 0; i < nProveedores; i++) {
         printf("!!%d!!", i);
-        arg[i] = malloc(sizeof(int));
         pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, &i);
+        printf("%s", "Hilo Proveedor lanzado.\n");
     }
 
-    printf("%s", "Hilo Proveedor lanzado.\n");
 
-    // Crear hilo del consumidor
+    // Crear hilos consumidor
     for (int i = 0; i < nConsumidores; i++) {
+        printf("¿¿%d¿¿", i);
         pthread_create(&consumidorThread, NULL, (void *) consumidorFunc, &i);
+        printf("%s", "Hilo Consumidor lanzado.\n");
     }
-    printf("%s", "Hilo Consumidor lanzado.\n");
 
 
     // Esperar a que los hilos terminen
     for (int i = 0; i < nProveedores; ++i) {
         pthread_join(proveedorThread, NULL);
     }
-    pthread_join(consumidorThread, NULL);
+
+    for (int i = 0; i < nConsumidores; ++i) {
+        pthread_join(consumidorThread, NULL);
+    }
 
 
     // Crear hilo del facturadorFunc
@@ -205,7 +208,7 @@ void proveedorFunc (const int *arg) { //////////////////////////
     FILE *file, *outputFile;
     bool bandera = true;
     char c, *fichPath = calloc(255, sizeof(char));
-    int productosLeidos = 0, productosValidos = 0, productosNoValidos = 0, proveedorID = *arg-1;
+    int productosLeidos = 0, productosValidos = 0, productosNoValidos = 0, proveedorID = *arg;
     TotalProductos totalProductos = {{0}};
 
 
@@ -273,9 +276,10 @@ void proveedorFunc (const int *arg) { //////////////////////////
         }
     }
     fclose(file); // Cerrar el archivo
-    sem_post(&semaforoFichero);
+    printf("ACAB PROV:%d ", proveedorID);
 
 
+    sem_wait(&semaforoFichero);
     // Escribir resultados en el archivo de salida
 
     sprintf(fichPath, "%s\\%s", path, fichDest);
@@ -295,26 +299,29 @@ void proveedorFunc (const int *arg) { //////////////////////////
     for (char tipo = 'a'; tipo <= 'j'; tipo++) {
         fprintf(outputFile, "     %d de tipo \"%c\".\n", totalProductos.total[tipo - 'a'], tipo);
     }
+    sem_post(&semaforoFichero);
 
     // Cerrar el archivo de salida
     fclose(outputFile);
 }
 
-void consumidorFunc(int consumidorID) {
-    int bandera = 0, numProdsConsumidosPorProveedor[nProveedores]['j' - 'a' + 1], numProdsConsumidos = 0;
+void consumidorFunc(const int *arg) {
+    int bandera1 = 0, numProdsConsumidosPorProveedor[nProveedores]['j' - 'a' + 1], numProdsConsumidos = 0, consumidorID = *arg;
     Producto productoConsumido;
 
     // Incializar numProdsConsumidosPorProveedor[] //No sabes lo que hay en la memoria cuando vas a escribir.
-    for (int i = 0; i <= nProveedores; ++i) {
-        for (int j = 0; j < 9; ++j) {
+    printf("SEXO%dSEXO", consumidorID);
+    for (int i = 0; i < nProveedores; i++) {
+        for (int j = 0; j < 10; j++) {
             numProdsConsumidosPorProveedor[i][j] = 0;
         }
     }
 
 
     // Consumir productos del búfer
-    while (bandera != 1) {
+    while (bandera1 != 1) {
 
+        //printf("BANDERA:(%d)", bandera1);
         /////////////////////////////
         sem_wait(&hayDato);
         /////////////////////////////
@@ -326,21 +333,23 @@ void consumidorFunc(int consumidorID) {
 
         productoConsumido = buffer[itConsBuffer];
 
-        printf("|%d|", itConsBuffer);
-        printf("_%c ", productoConsumido.tipo);
+        //printf("|%d|", itConsBuffer);
+        //printf("_%c ", productoConsumido.tipo);
 
         numProdsConsumidos++; // Incremento de contador general
         numProdsConsumidosPorProveedor[productoConsumido.proveedorID][productoConsumido.tipo - 'a']++; // Incremento de contador del tipo correspondiente
 
         itConsBuffer = (itConsBuffer + 1) % tamBuffer;
 
-        //Se da por finalizada la ejecución de un productor
-        bandera = (buffer[itConsBuffer].tipo == 'F') ? 1 : 0;
+        //Se da por finalizada la ejecución de un productor //////////////////// SE DA POR HECHA LA EXCLUSION MUTUA (?)
+        if (buffer[itConsBuffer].tipo == 'F') {contProdsAcabados++;
+            printf("Acabado");}
+        bandera1 = (contProdsAcabados == nProveedores) ? 1 : 0;
 
 
         sem_post(&semaforoConsBuffer);
         sem_post(&semaforoBuffer);
-        //printf("__|__");
+        printf("HOLAA ");
     }
 
     // Escribe en la lista el producto leido del buffer (lentamente perdiendo la cordura)
@@ -397,7 +406,7 @@ ConsumidorInfo *initListaProducto(ConsumidorInfo *lista) {
 }
 
 
-ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int *productosConsumidosPorTipo, int ID) {
+ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int productosConsumidosPorTipo[nProveedores][10], int ID) {
     ConsumidorInfo *nuevoConsumidor;
     ConsumidorInfo *aux;
     nuevoConsumidor = (ConsumidorInfo *) malloc(sizeof(ConsumidorInfo));
