@@ -176,30 +176,6 @@ copia.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/copia.c.s
 .PHONY : copia.c.s
 
-correccion.obj: correccion.c.obj
-.PHONY : correccion.obj
-
-# target to build an object file
-correccion.c.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/correccion.c.obj
-.PHONY : correccion.c.obj
-
-correccion.i: correccion.c.i
-.PHONY : correccion.i
-
-# target to preprocess a source file
-correccion.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/correccion.c.i
-.PHONY : correccion.c.i
-
-correccion.s: correccion.c.s
-.PHONY : correccion.s
-
-# target to generate assembly for a file
-correccion.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/correccion.c.s
-.PHONY : correccion.c.s
-
 listasEnlazadas.obj: listasEnlazadas.c.obj
 .PHONY : listasEnlazadas.obj
 
@@ -263,9 +239,6 @@ help:
 	@echo ... copia.obj
 	@echo ... copia.i
 	@echo ... copia.s
-	@echo ... correccion.obj
-	@echo ... correccion.i
-	@echo ... correccion.s
 	@echo ... listasEnlazadas.obj
 	@echo ... listasEnlazadas.i
 	@echo ... listasEnlazadas.s

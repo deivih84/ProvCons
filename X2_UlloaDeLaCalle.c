@@ -56,7 +56,7 @@ ConsumidorInfo *listaConsumidores;
 void proveedorFunc(const int *arg);
 void consumidorFunc(int consumidorID);
 ConsumidorInfo *initListaProducto(ConsumidorInfo *lista);
-ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int *productosConsumidosPorTipo, int ID);
+ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int productosConsumidosPorTipo[], int ID);
 void facturadorFunc(SharedData* sharedData);
 bool esTipoValido(char c);
 bool esCadena(char *string);
@@ -301,12 +301,14 @@ void proveedorFunc (const int *arg) { //////////////////////////
 }
 
 void consumidorFunc(int consumidorID) {
-    int bandera = 0, numeroProductosConsumidosPorTipo['j' - 'a' + 1], numeroProductosConsumidos = 0;
+    int bandera = 0, numProdsConsumidosPorProveedor[nProveedores]['j' - 'a' + 1], numProdsConsumidos = 0;
     Producto productoConsumido;
 
-    // Incializar numeroProductosConsumidosPorTipo[] //No sabes lo que hay en la memoria cuando vas a escribir.
-    for (int i = 0; i <= 9; ++i) {
-        numeroProductosConsumidosPorTipo[i] = 0;
+    // Incializar numProdsConsumidosPorProveedor[] //No sabes lo que hay en la memoria cuando vas a escribir.
+    for (int i = 0; i <= nProveedores; ++i) {
+        for (int j = 0; j < 9; ++j) {
+            numProdsConsumidosPorProveedor[i][j] = 0;
+        }
     }
 
 
@@ -327,8 +329,8 @@ void consumidorFunc(int consumidorID) {
         printf("|%d|", itConsBuffer);
         printf("_%c ", productoConsumido.tipo);
 
-        numeroProductosConsumidos++; // Incremento de contador general
-        numeroProductosConsumidosPorTipo[productoConsumido.tipo - 'a']++; // Incremento de contador del tipo correspondiente
+        numProdsConsumidos++; // Incremento de contador general
+        numProdsConsumidosPorProveedor[productoConsumido.proveedorID][productoConsumido.tipo - 'a']++; // Incremento de contador del tipo correspondiente
 
         itConsBuffer = (itConsBuffer + 1) % tamBuffer;
 
@@ -343,7 +345,7 @@ void consumidorFunc(int consumidorID) {
 
     // Escribe en la lista el producto leido del buffer (lentamente perdiendo la cordura)
     sem_wait(&semaforoLista);
-    listaConsumidores = agregarConsumidor(listaConsumidores, numeroProductosConsumidos,numeroProductosConsumidosPorTipo, consumidorID); //hay que pasarle prodConsPorTipo
+    listaConsumidores = agregarConsumidor(listaConsumidores, numProdsConsumidos, numProdsConsumidosPorProveedor, consumidorID); //hay que pasarle prodConsPorTipo
     sem_post(&semaforoLista);
 }
 
@@ -395,7 +397,7 @@ ConsumidorInfo *initListaProducto(ConsumidorInfo *lista) {
 }
 
 
-ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int productosConsumidosPorTipo[], int ID) {
+ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int *productosConsumidosPorTipo, int ID) {
     ConsumidorInfo *nuevoConsumidor;
     ConsumidorInfo *aux;
     nuevoConsumidor = (ConsumidorInfo *) malloc(sizeof(ConsumidorInfo));
