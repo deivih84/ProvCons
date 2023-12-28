@@ -301,6 +301,7 @@ void proveedorFunc (const int *arg) { //////////////////////////
     }
     sem_post(&semaforoFichero);
 
+
     // Cerrar el archivo de salida
     fclose(outputFile);
 }
