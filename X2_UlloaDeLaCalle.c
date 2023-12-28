@@ -259,8 +259,9 @@ void proveedorFunc (const int *arg) { //////////////////////////
 
             buffer[itProdBuffer].tipo = 'F';
             buffer[itProdBuffer].proveedorID = proveedorID;
+            itProdBuffer = (itProdBuffer + 1) % tamBuffer;
 
-            printf(" _____________FIN de lineaaaa___________ ");
+            printf(" _____________FIN de lineaaaa en %d___________ ", itProdBuffer);
             sem_post(&hayDato); //////SEMAFORO hayDato
 
 
@@ -307,7 +308,7 @@ void proveedorFunc (const int *arg) { //////////////////////////
 }
 
 void consumidorFunc(const int *arg) {
-    int bandera1 = 0, numProdsConsumidosPorProveedor[nProveedores]['j' - 'a' + 1], numProdsConsumidos = 0, consumidorID = *arg;
+    int bandera = 0, numProdsConsumidosPorProveedor[nProveedores]['j' - 'a' + 1], numProdsConsumidos = 0, consumidorID = *arg;
     Producto productoConsumido;
 
     // Incializar numProdsConsumidosPorProveedor[] //No sabes lo que hay en la memoria cuando vas a escribir.
@@ -320,9 +321,9 @@ void consumidorFunc(const int *arg) {
 
 
     // Consumir productos del búfer
-    while (bandera1 != 1) {
+    while (bandera != 1) {
 
-        //printf("BANDERA:(%d)", bandera1);
+        //printf("BANDERA:(%d)", bandera);
         /////////////////////////////
         sem_wait(&hayDato);
         /////////////////////////////
@@ -343,14 +344,15 @@ void consumidorFunc(const int *arg) {
         itConsBuffer = (itConsBuffer + 1) % tamBuffer;
 
         //Se da por finalizada la ejecución de un productor //////////////////// SE DA POR HECHA LA EXCLUSION MUTUA (?)
-        if (buffer[itConsBuffer].tipo == 'F') {contProdsAcabados++;
-            printf("Acabado");}
-        bandera1 = (contProdsAcabados == nProveedores) ? 1 : 0;
+        if (buffer[itConsBuffer].tipo == 'F') {contProdsAcabados++;}
+        //if (contProdsAcabados == nProveedores) { printf("JIJAIJAISJAS");}
 
+        printf(" |CACA:(%d) en %d| ", contProdsAcabados, itConsBuffer);
 
         sem_post(&semaforoConsBuffer);
         sem_post(&semaforoBuffer);
-        printf("HOLAA ");
+
+        bandera = (contProdsAcabados == nProveedores) ? 1 : 0;
     }
 
     // Escribe en la lista el producto leido del buffer (lentamente perdiendo la cordura)
