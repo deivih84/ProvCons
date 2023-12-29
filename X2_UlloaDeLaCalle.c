@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
     path = strdup(argv[1]);
     fichDest = strdup(argv[2]);
     listaConsumidores = NULL;
-    int j;
+    int j, k;
     FILE *file;
     pthread_t proveedorThread[nProveedores], consumidorThread[nConsumidores], facturadorThread;
 
@@ -135,15 +135,15 @@ int main(int argc, char *argv[]) {
     // Crear hilos proveedor
     for (int i = 0; i < nProveedores; i++) {
         copiarValor(&j, i);
-        pthread_create(&proveedorThread[j], NULL, (void *) proveedorFunc, &j);
+        pthread_create(&proveedorThread[i], NULL, (void *) proveedorFunc, &i);
         printf("Hilo Proveedor %d lanzado.\n", i);
     }
 
 
     // Crear hilos consumidor
     for (int i = 0; i < nConsumidores; i++) {
-        copiarValor(&j, i);
-        pthread_create(&consumidorThread[j], NULL, (void *) consumidorFunc, &j);
+        copiarValor(&k, i);
+        pthread_create(&consumidorThread[i], NULL, (void *) consumidorFunc, &i);
         printf("Hilo Consumidor %d lanzado.\n", i);
     }
 
@@ -151,12 +151,12 @@ int main(int argc, char *argv[]) {
     // Esperar a que los hilos terminen
     for (int i = 0; i < nProveedores; i++) {
         pthread_join(proveedorThread[i], NULL);
-        printf("             FiNP          ");
+        printf("             FiNP %d         ", i);
     }
 
     for (int i = 0; i < nConsumidores; i++) {
         pthread_join(consumidorThread[i], NULL);
-        printf("            FInC          ");
+        printf("            FInC %d          ", i);
     }
 
 
