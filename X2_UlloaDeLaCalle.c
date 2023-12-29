@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     listaConsumidores = initListaProducto(listaConsumidores);
     int *arg[MAX_PROVEEDORES];
     FILE *file, *outputFile;
-    pthread_t proveedorThread, consumidorThread, facturadorThread;
+    pthread_t proveedorThread[nProveedores], consumidorThread[nConsumidores], facturadorThread;
 
     // Verificación de la cantidad de argumentos
     if (argc != 6) {
@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
     // Crear hilos proveedor
     for (int i = 0; i < nProveedores; i++) {
         printf("!!%d!!", i);
-        pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, &i);
+        pthread_create(&proveedorThread[i], NULL, (void *) proveedorFunc, &i);
         printf("%s", "Hilo Proveedor lanzado.\n");
     }
 
@@ -170,23 +170,27 @@ int main(int argc, char *argv[]) {
     // Crear hilos consumidor
     for (int i = 0; i < nConsumidores; i++) {
         printf("??%d??", i);
-        pthread_create(&consumidorThread, NULL, (void *) consumidorFunc, &i);
+        pthread_create(&consumidorThread[i], NULL, (void *) consumidorFunc, &i);
         printf("%s", "Hilo Consumidor lanzado.\n");
     }
 
 
     // Esperar a que los hilos terminen
     for (int i = 0; i < nProveedores; ++i) {
-        pthread_join(proveedorThread, NULL);
+        pthread_join(proveedorThread[i], NULL);
+        printf("             FiNP          ");
     }
 
     for (int i = 0; i < nConsumidores; ++i) {
-        pthread_join(consumidorThread, NULL);
+        pthread_join(consumidorThread[i], NULL);
+        printf("            FInC          ");
     }
 
 
     // Crear hilo del facturadorFunc
     pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, &sharedData);
+    pthread_join(facturadorThread, NULL);
+
 
     printf("%s", "Hilo Facturador lanzado.\n");
 
@@ -204,7 +208,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void proveedorFunc (const int *arg) { //////////////////////////
+void proveedorFunc (const int *arg) {
     FILE *file, *outputFile;
     bool bandera = true;
     char c, *fichPath = calloc(255, sizeof(char));
@@ -305,7 +309,6 @@ void proveedorFunc (const int *arg) { //////////////////////////
 
     // Cerrar el archivo de salida
     fclose(outputFile);
-    pthread_exit(NULL);
 }
 
 void consumidorFunc(const int *arg) {
@@ -348,7 +351,6 @@ void consumidorFunc(const int *arg) {
 
 
         //Se da por finalizada la ejecución de un productor
-        printf(" "); //El print de la discordia.
 
         bandera = (contProdsAcabados == nProveedores) ? 1 : 0;
 
@@ -362,20 +364,24 @@ void consumidorFunc(const int *arg) {
 
     }
 
-    // Escribe en la lista el producto leido del buffer (lentamente perdiendo la cordura)
+    // Escribe en la lista el producto leido del buffer
+    printf(" _A_ ");
     sem_wait(&semaforoLista);
     listaConsumidores = agregarConsumidor(listaConsumidores, numProdsConsumidos, numProdsConsumidosPorProveedor, consumidorID); //hay que pasarle prodConsPorTipo
     sem_post(&semaforoLista);
-    pthread_exit(NULL);
 }
 
 
 void facturadorFunc(SharedData* sharedData) {
     FILE *outputFile;
     int i = 0;
+    printf("PRINT FACTURADOR");
+    char *fichPath = calloc(255, sizeof(char));
+    sprintf(fichPath, "%s\\%s", path, fichDest);
+
 
     sem_wait(&semaforoFichero);
-    outputFile = fopen(sharedData->fichDestino, "a");
+    outputFile = fopen(fichPath, "a");
     sem_wait(&semaforoLista);
 
     // Agregar a la lista
@@ -391,8 +397,10 @@ void facturadorFunc(SharedData* sharedData) {
         listaConsumidores = listaConsumidores->siguiente;
         i++;
     }
+    sem_post(&semaforoLista);
     sem_post(&semaforoFichero);
 
+    fclose(outputFile);
 }
 
 
