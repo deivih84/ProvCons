@@ -12,7 +12,21 @@ Proveedor: 0.
      0 de tipo "h".
      0 de tipo "i".
      0 de tipo "j".
-Proveedor: 1.
+Proveedor: 0.
+   Productos procesados: 15.
+   Productos Inválidos: 5.
+   Productos Válidos: 10. De los cuales se han insertado:
+     5 de tipo "a".
+     0 de tipo "b".
+     0 de tipo "c".
+     5 de tipo "d".
+     0 de tipo "e".
+     0 de tipo "f".
+     0 de tipo "g".
+     0 de tipo "h".
+     0 de tipo "i".
+     0 de tipo "j".
+Proveedor: 2.
    Productos procesados: 30.
    Productos Inválidos: 10.
    Productos Válidos: 20. De los cuales se han insertado:
