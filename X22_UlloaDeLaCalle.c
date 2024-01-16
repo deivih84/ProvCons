@@ -12,6 +12,8 @@
 
 #define MAX_COMMAND_LENGTH 800
 #define MAX_ARGUMENTS 5
+#define MAX_PROVEEDORES 7
+#define MAX_CONSUMIDORES 1000
 
 typedef struct {
     char tipo;
@@ -27,62 +29,40 @@ typedef struct {
 typedef struct nodo {
     int consumidorID;
     int productosConsumidos;
-    int productosConsumidosPorTipo['j' - 'a' + 1];
+    int productosConsumidosPorTipo[7]['j' - 'a' + 1];
     struct nodo *siguiente;
 } ConsumidorInfo;
 
-// Estructura para compartir datos entre proveedor y consumidor
-typedef struct {
-    char *ruta;
-    char *fichDestino;
-    int T;
-    int P;
-    int C;
-    int in;               // Índice de escritura en el búfer
-    int out;              // Índice de lectura en el búfer
-    TotalProductos totalProductos; // Registro del total de productos
-} SharedData;
-
-<<<<<<< HEAD
 // Variables GLOBALES :)
-=======
-// Variables globales
->>>>>>> origin/master
-sem_t semaforoFichero, semaforoBuffer, semaforoLista, semaforoConsBuffer;
+sem_t semaforoFichero, semaforoBuffer, semaforoLista, hayDato;
 Producto *buffer;
-int itConsBuffer = 0;
-ConsumidorInfo *listaConsumidores;
-int *productores[7];
-int totalProductosConsumidos = 0;
-int maximoConsumidor = 0;
-int maximaConsumicion = 0;
+char *path, *fichDest;
+int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0, tamBuffer, nProveedores, nConsumidores;
+ConsumidorInfo *listaConsumidores = NULL;
 
+// Declaración de funciones
+void proveedorFunc(int *arg);
 
-void proveedorFunc(SharedData *data);
+void consumidorFunc(int *arg);
 
-void consumidorFunc(SharedData *data);
+ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int productosConsumidosPorTipo[nProveedores][10], int ID);
 
-ConsumidorInfo *initListaProducto(ConsumidorInfo *lista);
-
-ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int *productosConsumidosPorTipo, int ID);
-
-void facturadorFunc(SharedData* sharedData);
+void facturadorFunc();
 
 bool esTipoValido(char c);
 
+void copiarValor(int *destino, int origen);
+
 bool esCadena(char *string);
 
-//printf("hola1");fflush(NULL); // PRINT PARA DEBUG
 
 int main(int argc, char *argv[]) {
-    char *path = argv[1];
-    int arg3, arg4, arg5;
-    SharedData sharedData;
-    listaConsumidores = initListaProducto(listaConsumidores);
-    FILE *file, *outputFile;
-    pthread_t proveedorThread, consumidorThread, facturadorThread;
-    int indice;
-
+    char *dirpath = strdup(argv[1]);
+    char *fileName = strdup(argv[2]);
+    listaConsumidores = NULL;
+    int k;
+    FILE *file;
+    pthread_t proveedorThread[nProveedores], consumidorThread[nConsumidores], facturadorThread;
 
     // Verificación de la cantidad de argumentos
     if (argc != 6) {
@@ -93,213 +73,156 @@ int main(int argc, char *argv[]) {
     //Verificación parámetros
 
     //Verificar si los parámetros pasados son válidos o no. Si no, se pasa -1 para salir en el próximo if
-    arg3 = (!esCadena(argv[3])) ? atoi(argv[3]) : -1;
-    arg4 = (!esCadena(argv[4])) ? atoi(argv[4]) : -1;
-    arg5 = (!esCadena(argv[5])) ? atoi(argv[5]) : -1;
+    tamBuffer = (!esCadena(argv[3])) ? atoi(argv[3]) : -1;
+    nProveedores = (!esCadena(argv[4])) ? atoi(argv[4]) : -1;
+    nConsumidores = (!esCadena(argv[5])) ? atoi(argv[5]) : -1;
 
-    if (arg3 <= 0 || arg3 > 5000) {
+    if (tamBuffer <= 0 || tamBuffer > 5000) {
         fprintf(stderr, "Error: T debe ser un entero positivo menor o igual a 5000.\n");
         return -1;
     }
-    if (arg4 <= 0 || arg4 > 7) {
-        fprintf(stderr, "Error: P debe ser un entero positivo menor o igual a 7.\n");
+    if (nProveedores <= 0 || nProveedores > MAX_PROVEEDORES) {
+        fprintf(stderr, "Error: P debe ser un entero positivo menor o igual a %d.\n", MAX_PROVEEDORES);
         return -1;
     }
-    if (arg5 <= 0 || arg5 > 1000) {
-        fprintf(stderr, "Error: C debe ser un entero positivo menor o igual a 1000.\n");
+    if (nConsumidores <= 0 || nConsumidores > MAX_CONSUMIDORES) {
+        fprintf(stderr, "Error: C debe ser un entero positivo menor o igual a %d.\n", MAX_CONSUMIDORES);
         return -1;
     }
 
-<<<<<<< HEAD
-    //AQUÍ HABRÁ QUE MODIFICAR COSAS PARA MÁS DE UN PROVEEDOR
-=======
->>>>>>> origin/master
-    sprintf(path, "%s\\proveedor%d.dat", argv[1], 0);
-    file = fopen(path, "r");
-    if (file == NULL) {
-        fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", sharedData.P);
-    }
-
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/master
-    sharedData.ruta = path; // Ruta de los archivos de entrada
-    sharedData.fichDestino = argv[2]; // Nombre del fichero destino.
-    sharedData.T = arg3; // Tamaño del búfer circular.
-    sharedData.P = arg4; // Número total de proveedores.
-    sharedData.C = arg5; // Número total de clientes.
-
-    // Crear estructuras de datos compartidas
-    sharedData.in = 0;
-    sharedData.out = 0;
-    buffer = malloc(sharedData.T * sizeof(Producto));
+    buffer = calloc(tamBuffer, sizeof(Producto));
     if (buffer == NULL) {
         free(buffer);
         fprintf(stderr, "Error al asignar memoria para el búfer compartido.\n");
         return -1;
     }
 
-    //Prueba apertura fichDestino
-    outputFile = fopen(sharedData.fichDestino, "w");
-    if (outputFile == NULL) {
-        fprintf(stderr, "Error al abrir el archivo de salida.\n");
-        fclose(outputFile);
+    //Prueba apertura de TODOS los ficheros para proveedores
+    for (int i = 0; i < nProveedores; i++) {
+        sprintf(dirpath, "%s\\proveedor%d.dat", argv[1], i);
+        file = fopen(dirpath, "r");
+        if (file == NULL) {
+            fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", i);
+            fclose(file);
+            free(buffer);
+            return -1;
+        }
+        fclose(file);
+    }
+    // Creado o limpieza del fichero de salida.
+    path = strdup(argv[1]);
+    fichDest = strdup(argv[2]);
+
+    file = fopen(fichDest, "w");
+    if (file == NULL) {
+        fprintf(stderr, "Error al abrir el archivo salida.");
+        fclose(file);
         free(buffer);
         return -1;
     }
+    fclose(file);
 
     sem_init(&semaforoFichero, 0, 1);
     sem_init(&semaforoBuffer, 0, 1);
     sem_init(&semaforoLista, 0, 1);
-    sem_init(&semaforoConsBuffer, 0, 1);
+    sem_init(&hayDato, 0, 0);
 
 
-    // Crear hilo del proveedor
-    pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, &sharedData);
-<<<<<<< HEAD
-    printf("%s", "Hilo Proveedor lanzado.\n");
-
-    // Crear hilo del consumidor
-    for(indice=0;indice<sharedData.C;indice++){
-      pthread_create(&consumidorThread, NULL, (void *) consumidorFunc, &sharedData);
-=======
-    if (pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, &sharedData) != 0) {
-        fprintf(stderr, "Error al crear el hilo del proveedor.\n");
-        fclose(outputFile);
-        free(buffer);
-        return -1;
+    // Crear hilos proveedor
+    for (int contProv = 0; contProv < nProveedores; contProv++) {
+        pthread_create(&proveedorThread[contProv], NULL, (void *) proveedorFunc, &contProv);
+        printf("Hilo Proveedor %d lanzado.\n", contProv);
     }
-    printf("%s", "Hilo Proveedor lanzado.\n");
 
-    // Crear hilo del consumidor
-    for(indice=0; indice < sharedData.C; indice++){
-      pthread_create(&consumidorThread, NULL, (void *) consumidorFunc, &sharedData);
-      if (pthread_create(&consumidorThread, NULL, (void *) consumidorFunc, &sharedData) != 0) {
-        fprintf(stderr, "Error al crear el hilo del consumidor.\n");
-        fclose(outputFile);
-        free(buffer);
-        return -1;
-      }
->>>>>>> origin/master
-      printf("%s", "Hilo Consumidor lanzado.\n");
+    // Crear hilos consumidor
+    for (int contCons = 0; contCons < nConsumidores; contCons++) {
+        copiarValor(&k, contCons);
+        pthread_create(&consumidorThread[contCons], NULL, (void *) consumidorFunc, &contCons);
+        printf("Hilo Consumidor %d lanzado.\n", contCons);
     }
 
 
     // Esperar a que los hilos terminen
-    pthread_join(proveedorThread, NULL);
-<<<<<<< HEAD
-    for(indice=0;indice<sharedData.C;indice++){
-      pthread_join(consumidorThread, NULL);
-=======
-    if (pthread_join(proveedorThread, NULL) != 0) {
-          fprintf(stderr, "Error al esperar el hilo del proveedor.\n");
-          fclose(outputFile);
-          free(buffer);
-          return -1;
+    for (int i = 0; i < nProveedores; i++) {
+        pthread_join(proveedorThread[i], NULL);
     }
-    for(indice=0;indice<sharedData.C;indice++){
-      pthread_join(consumidorThread, NULL);
-      if (pthread_join(consumidorThread, NULL) != 0) {
-          fprintf(stderr, "Error al esperar el hilo del consumidor.\n");
-          fclose(outputFile);
-          free(buffer);
-          return -1;
-      }
->>>>>>> origin/master
+    for (int i = 0; i < nConsumidores; i++) {
+        pthread_join(consumidorThread[i], NULL);
     }
-
 
     // Crear hilo del facturadorFunc
-    pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, &sharedData);
-<<<<<<< HEAD
-    printf("%s", "Hilo Facturador lanzado.\n");
-
+    pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, NULL);
     pthread_join(facturadorThread, NULL);
-=======
-    if (pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, &sharedData) != 0) {
-        fprintf(stderr, "Error al crear el hilo del facturador.\n");
-        fclose(outputFile);
-        free(buffer);
-        return -1;
-    }
-    printf("%s", "Hilo Facturador lanzado.\n");
-
-    pthread_join(facturadorThread, NULL);
-    if (pthread_join(facturadorThread, NULL) != 0) {
-          fprintf(stderr, "Error al esperar el hilo del facturador.\n");
-          fclose(outputFile);
-          free(buffer);
-          return -1;
-    }
->>>>>>> origin/master
-
-    fprintf(outputFile, "Total de productos consumidos: %d.\n", totalProductosConsumidos);
-    for(indice=0; indice<sharedData.P;indice++){
-      fprintf(outputFile, "%d del proveedor %d.\n", *productores[indice], indice);
-    }
-    fprintf(outputFile, "Cliente consumidor que más ha consumido: %d.\n", maximoConsumidor);
 
     // Destruir semáforos y liberar memoria
     sem_destroy(&semaforoFichero);
     sem_destroy(&semaforoBuffer);
     sem_destroy(&semaforoLista);
-    sem_destroy(&semaforoConsBuffer);
+    sem_destroy(&hayDato);
 
-    fclose(outputFile);
     free(buffer);
     return 0;
 }
 
-void proveedorFunc(SharedData *sharedData) {
+void proveedorFunc(int *arg) {
     FILE *file, *outputFile;
-    char c;
-<<<<<<< HEAD
-=======
-    char tipo;
->>>>>>> origin/master
-    int productosLeidos = 0, productosValidos = 0, productosInvalidos = 0, proveedorID = 0;
+    bool bandera = true;
+    char c, *fichPath = calloc(255, sizeof(char));
+    int productosLeidos = 0, productosValidos = 0, productosNoValidos = 0, proveedorID = *arg;
     TotalProductos totalProductos = {{0}};
 
     // Abrir el archivo de entrada del proveedor
-    file = fopen(sharedData->ruta, "r");
-<<<<<<< HEAD
-=======
-    if (file == NULL) {
-        fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", 0);
-        free(buffer);
-        return;
-    }
->>>>>>> origin/master
+    sprintf(fichPath, "%s\\proveedor%d.dat", path, proveedorID);
+    file = fopen(fichPath, "r");
 
     // Leer y procesar productos del archivo
-    while ((c = (char) fgetc(file)) != EOF) {
-        productosLeidos++;
+    while (bandera) {
+        c = (char) fgetc(file);
 
         if (esTipoValido(c)) {
-            // Incluir semáforo para escritura en el búfer
+            // Semáforos para escritura en el búfer
             sem_wait(&semaforoBuffer);
+
             // Escribir en el búfer
-            buffer[sharedData->in].tipo = c;
-            buffer[sharedData->in].proveedorID = proveedorID;
-            sharedData->in = (sharedData->in + 1) % sharedData->T;
+            buffer[itProdBuffer].tipo = c;
+            buffer[itProdBuffer].proveedorID = proveedorID;
+            sem_post(&hayDato); //////SEMAFORO hayDato
+
+            itProdBuffer = (itProdBuffer + 1) % tamBuffer;
 
             sem_post(&semaforoBuffer);
+
             // Incrementar contador de productos válidos
             productosValidos++;
-            // Actualizar registro de productos
             totalProductos.total[c - 'a']++;
+            productosLeidos++;
+
+        } else if (c == EOF) { // Si es el final del fichero pone una 'F' para decir que ha acabado.
+            sem_wait(&semaforoBuffer);
+
+            buffer[itProdBuffer].tipo = 'F';
+            buffer[itProdBuffer].proveedorID = proveedorID;
+            itProdBuffer = (itProdBuffer + 1) % tamBuffer;
+
+            sem_post(&hayDato);
+            sem_post(&semaforoBuffer);
+            bandera = false;
+
         } else {
-            // Procesar productos inválidos
-            productosInvalidos++;
+            // Procesar productos no válidos
+            productosNoValidos++;
+            productosLeidos++;
+
         }
-        //buffer[sharedData->in + 1].tipo = '7'; //Fin del contenido del buffer
     }
     fclose(file); // Cerrar el archivo
-    sem_post(&semaforoFichero);
 
-    // Escribir resultados en el archivo de salida
-    outputFile = fopen(sharedData->fichDestino, "w");
+    // Escribir resultados en el fichero de salida
+    sem_wait(&semaforoFichero);
+
+    sprintf(fichPath, "%s\\%s", path, fichDest);
+
+    outputFile = fopen(fichDest, "a");
     if (outputFile == NULL) {
         fprintf(stderr, "Error al abrir el archivo de salida del proveedor %d.\n", 0);
         free(buffer);
@@ -308,125 +231,131 @@ void proveedorFunc(SharedData *sharedData) {
 
     fprintf(outputFile, "Proveedor: %d.\n", proveedorID);
     fprintf(outputFile, "   Productos procesados: %d.\n", productosLeidos);
-    fprintf(outputFile, "   Productos Inválidos: %d.\n", productosInvalidos);
+    fprintf(outputFile, "   Productos Inválidos: %d.\n", productosNoValidos);
     fprintf(outputFile, "   Productos Válidos: %d. De los cuales se han insertado:\n", productosValidos);
-    totalProductosConsumidos=totalProductosConsumidos + productosValidos;
-    *productores[proveedorID]=productosValidos;
 
-<<<<<<< HEAD
     for (char tipo = 'a'; tipo <= 'j'; tipo++) {
-=======
-    for (tipo = 'a'; tipo <= 'j'; tipo++) {
->>>>>>> origin/master
         fprintf(outputFile, "     %d de tipo \"%c\".\n", totalProductos.total[tipo - 'a'], tipo);
     }
+    sem_post(&semaforoFichero);
 
     // Cerrar el archivo de salida
     fclose(outputFile);
 }
 
-void consumidorFunc(SharedData *sharedData) {
-<<<<<<< HEAD
-    int consumidorID = 0, bandera = 0, numeroProductosConsumidosPorTipo['j' - 'a' + 1], numeroProductosConsumidos = 0;
+void consumidorFunc(int *arg) {
+    bool bandera = true;
+    int numProdsConsumidosPorProveedor[nProveedores]['j' - 'a' + 1], numProdsConsumidos = 0, consumidorID = *arg;
     Producto productoConsumido;
 
-    // Incializar numeroProductosConsumidosPorTipo[] //No sabes lo que hay en la memoria cuando vas a escribir.
-    for (int i = 0; i <= 9; ++i) {
-=======
-    int consumidorID = 0, bandera = 0, numeroProductosConsumidosPorTipo['j' - 'a' + 1], numeroProductosConsumidos = 0, i;
-    Producto productoConsumido;
-
-    // Incializar numeroProductosConsumidosPorTipo[] No sabes lo que hay en la memoria cuando vas a escribir.
-    for (i = 0; i <= 9; ++i) {
->>>>>>> origin/master
-        numeroProductosConsumidosPorTipo[i] = 0;
+    // Incializar numProdsConsumidosPorProveedor[][] //No sabes lo que hay en la memoria cuando vas a escribir.
+    for (int i = 0; i < nProveedores; i++) {
+        for (int j = 0; j < 10; j++) {
+            numProdsConsumidosPorProveedor[i][j] = 0;
+        }
     }
 
+
     // Consumir productos del búfer
-    while (bandera != 1) {
+    while (bandera) {
+        sem_wait(&hayDato);
 
         // Leer del buffer
-        sem_wait(&semaforoConsBuffer);
         sem_wait(&semaforoBuffer);
         productoConsumido = buffer[itConsBuffer];
 
-        sem_post(&semaforoBuffer);
+        if (productoConsumido.tipo != 'F') {
+            numProdsConsumidos++; // Incremento de contador general
+            numProdsConsumidosPorProveedor[productoConsumido.proveedorID][productoConsumido.tipo - 'a']++; // Incremento de contador del tipo correspondiente
+        } else {
+            contProvsAcabados += 1;
+        }
 
-        numeroProductosConsumidos++; // Incremento de contador general
-        numeroProductosConsumidosPorTipo[productoConsumido.tipo - 'a']++; // Incremento de contador del tipo correspondiente
-
-        //Se actualiza el contador del buffer
-
-        sem_wait(&semaforoBuffer);
-
-        itConsBuffer = (itConsBuffer + 1) % sharedData->T;
-        bandera = (itConsBuffer >= sharedData->T || !esTipoValido(buffer[itConsBuffer + 1].tipo)) ? 1 : 0;
+        itConsBuffer = (itConsBuffer + 1) % tamBuffer;
 
         sem_post(&semaforoBuffer);
-        sem_post(&semaforoConsBuffer);
+
+        bandera = (contProvsAcabados == nProveedores) ? false : true;
     }
 
-<<<<<<< HEAD
-    // Escribe en la lista el producto leido del buffer (lentamente perdiendo la cordura)
-=======
     // Escribe en la lista el producto leido del buffer
->>>>>>> origin/master
     sem_wait(&semaforoLista);
-    listaConsumidores = agregarConsumidor(listaConsumidores, numeroProductosConsumidos,numeroProductosConsumidosPorTipo, consumidorID); //hay que pasarle prodConsPorTipo
+    listaConsumidores = agregarConsumidor(listaConsumidores, numProdsConsumidos, numProdsConsumidosPorProveedor,consumidorID); //hay que pasarle prodConsPorTipo
     sem_post(&semaforoLista);
 }
 
 
-void facturadorFunc(SharedData* sharedData) {
+void facturadorFunc() {
     FILE *outputFile;
-<<<<<<< HEAD
-    int i = 0;
-=======
-    int i = 0, j;
->>>>>>> origin/master
+    int i = 0, proveedores[nProveedores], tipos[10], consumidores[nConsumidores], suma = 0, maximo = 0, cons = 0;
+    char *fichPath = calloc(255, sizeof(char));
+    sprintf(fichPath, "%s\\%s", path, fichDest);
 
-    sem_wait(&semaforoFichero);
-    outputFile = fopen(sharedData->fichDestino, "a");
+    outputFile = fopen(fichPath, "a");
+
     sem_wait(&semaforoLista);
+
+    for (int k = 0; k < nConsumidores; ++k) { // Inicializar array consumidores
+        consumidores[k] = 0;
+    }
     // Agregar a la lista
     while (listaConsumidores != NULL) {
-        // Contadores de productos, uno por tipos y uno por consumidores
+        for (int k = 0; k < nProveedores; ++k) { // Inicializar array proveedores
+            proveedores[k] = 0;
+        }
+        for (int k = 0; k < 10; ++k) { // Inicializar array tipos
+            tipos[k] = 0;
+        }
+        for (int j = 0; j < nProveedores; ++j) {
+            for (int k = 0; k < 10; ++k) {
+                proveedores[j] += listaConsumidores->productosConsumidosPorTipo[j][k];
+            }
+        }
+        for (int j = 0; j < 10; ++j) { // Contar cuantos productos se han consumido por tipo entre todos los proveedores
+            for (int k = 0; k < nProveedores; ++k) {
+                tipos[j] += listaConsumidores->productosConsumidosPorTipo[k][j];
+            }
+        }
+        consumidores[i] = listaConsumidores->productosConsumidos; // Para sacar el que más ha consumido más tarde
 
         fprintf(outputFile, "\nCliente consumidor: %d\n", i);
-
         fprintf(outputFile, "  Productos consumidos: %d. De los cuales:\n", listaConsumidores->productosConsumidos);
-<<<<<<< HEAD
-        for (int j = 0; j < ('j' - 'a' + 1); ++j) {
-=======
-        for (j = 0; j < ('j' - 'a' + 1); ++j) {
->>>>>>> origin/master
-            fprintf(outputFile, "     Producto tipo \"%c\": %d\n", (char) (j + 'a'),
-                    listaConsumidores->productosConsumidosPorTipo[j]);
+
+        for (int tipo = 0; tipo < ('j' - 'a' + 1); ++tipo) {
+            fprintf(outputFile, "     Producto tipo \"%c\": %d\n", (char) (tipo + 'a'), tipos[tipo]);
         }
         listaConsumidores = listaConsumidores->siguiente;
         i++;
-        if(maximaConsumicion<listaConsumidores->productosConsumidos){
-          maximoConsumidor = i;
-          maximaConsumicion = listaConsumidores->productosConsumidos;
+    }
+    for (int j = 0; j < nProveedores; ++j) { // Total de productos
+        suma += proveedores[j];
+    }
+    for (int j = 0; j < nConsumidores; j++) { // Hallar el consumidor que más a consumido.
+        if (maximo <= consumidores[j]) {
+            maximo = consumidores[j];
+            cons = j;
         }
     }
-    sem_post(&semaforoFichero);
+    fprintf(outputFile, "\nTotal de productos consumidos: %d\n", suma);
+    for (int j = 0; j < nProveedores; ++j) {
+        fprintf(outputFile, "     %d del proveedor %d.\n", proveedores[j], j);
+    }
+    fprintf(outputFile, "Cliente consumidor que mas ha consumido: %d\n", cons);
 
+    sem_post(&semaforoLista);
+    fclose(outputFile);
 }
 
+// Devuelve True si está entre a y j (incluidas)
+bool esTipoValido(char c) { return (c >= 'a' && c <= 'j'); }
 
-bool esTipoValido(char c) { // Devuelve True si está entre a y j (incluidas)
-    return (c >= 'a' && c <= 'j');
+void copiarValor(int *destino, int origen) {
+    *destino = origen;  // Aquí se copia el valor al que apunta el puntero destino
 }
 
 
 bool esCadena(char *cadena) {
-<<<<<<< HEAD
     for (int i = 0; i < strlen(cadena); ++i) {
-=======
-    int i;
-    for (i = 0; i < strlen(cadena); ++i) {
->>>>>>> origin/master
         if (!isdigit(cadena[i])) {
             return true; // Devuelve 1 si no es una cadena de dígitos
         }
@@ -435,13 +364,7 @@ bool esCadena(char *cadena) {
 }
 
 
-ConsumidorInfo *initListaProducto(ConsumidorInfo *lista) {
-    lista = NULL;
-    return lista;
-}
-
-
-ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int productosConsumidosPorTipo[], int ID) {
+ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int productosConsumidosPorTipo[nProveedores][10], int ID) {
     ConsumidorInfo *nuevoConsumidor;
     ConsumidorInfo *aux;
     nuevoConsumidor = (ConsumidorInfo *) malloc(sizeof(ConsumidorInfo));
@@ -461,9 +384,5 @@ ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos,
         }
         aux->siguiente = nuevoConsumidor;
     }
-<<<<<<< HEAD
-=======
-    free(nuevoConsumidor);
->>>>>>> origin/master
     return nodo;
 }
