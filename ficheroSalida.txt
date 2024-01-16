@@ -2,28 +2,28 @@ Proveedor: 0.
    Productos procesados: 15.
    Productos Inválidos: 5.
    Productos Válidos: 10. De los cuales se han insertado:
-     5 de tipo "a".
-     0 de tipo "b".
-     0 de tipo "c".
-     5 de tipo "d".
-     0 de tipo "e".
-     0 de tipo "f".
+     -1695768491 de tipo "a".
+     32765 de tipo "b".
+     -1609917284 de tipo "c".
+     32770 de tipo "d".
+     21651376 de tipo "e".
+     376 de tipo "f".
      0 de tipo "g".
      0 de tipo "h".
-     0 de tipo "i".
-     0 de tipo "j".
+     21651376 de tipo "i".
+     376 de tipo "j".
 Proveedor: 1.
    Productos procesados: 30.
    Productos Inválidos: 10.
    Productos Válidos: 20. De los cuales se han insertado:
      10 de tipo "a".
      0 de tipo "b".
-     0 de tipo "c".
-     10 de tipo "d".
+     -1581381696 de tipo "c".
+     32775 de tipo "d".
      0 de tipo "e".
      0 de tipo "f".
-     0 de tipo "g".
-     0 de tipo "h".
+     -1 de tipo "g".
+     -1 de tipo "h".
      0 de tipo "i".
      0 de tipo "j".
 Proveedor: 2.
@@ -32,12 +32,12 @@ Proveedor: 2.
    Productos Válidos: 30. De los cuales se han insertado:
      15 de tipo "a".
      0 de tipo "b".
-     0 de tipo "c".
-     15 de tipo "d".
+     -1581381696 de tipo "c".
+     32780 de tipo "d".
      0 de tipo "e".
      0 de tipo "f".
-     0 de tipo "g".
-     0 de tipo "h".
+     -1 de tipo "g".
+     -1 de tipo "h".
      0 de tipo "i".
      0 de tipo "j".
 
