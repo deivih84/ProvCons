@@ -2,28 +2,28 @@ Proveedor: 0.
    Productos procesados: 15.
    Productos Inválidos: 5.
    Productos Válidos: 10. De los cuales se han insertado:
-     -687775771 de tipo "a".
-     456 de tipo "b".
+     5 de tipo "a".
+     0 de tipo "b".
      0 de tipo "c".
      5 de tipo "d".
-     -687775776 de tipo "e".
-     456 de tipo "f".
-     -687775776 de tipo "g".
-     456 de tipo "h".
-     -687775776 de tipo "i".
-     456 de tipo "j".
+     0 de tipo "e".
+     0 de tipo "f".
+     0 de tipo "g".
+     0 de tipo "h".
+     0 de tipo "i".
+     0 de tipo "j".
 Proveedor: 1.
    Productos procesados: 30.
    Productos Inválidos: 10.
    Productos Válidos: 20. De los cuales se han insertado:
      10 de tipo "a".
      0 de tipo "b".
-     -1 de tipo "c".
-     9 de tipo "d".
+     0 de tipo "c".
+     10 de tipo "d".
      0 de tipo "e".
      0 de tipo "f".
-     744894024 de tipo "g".
-     32765 de tipo "h".
+     0 de tipo "g".
+     0 de tipo "h".
      0 de tipo "i".
      0 de tipo "j".
 Proveedor: 2.
@@ -32,11 +32,56 @@ Proveedor: 2.
    Productos Válidos: 30. De los cuales se han insertado:
      15 de tipo "a".
      0 de tipo "b".
-     -1 de tipo "c".
-     14 de tipo "d".
+     0 de tipo "c".
+     15 de tipo "d".
      0 de tipo "e".
      0 de tipo "f".
-     744894024 de tipo "g".
-     32765 de tipo "h".
+     0 de tipo "g".
+     0 de tipo "h".
      0 de tipo "i".
      0 de tipo "j".
+
+Cliente consumidor: 0
+  Productos consumidos: 34. De los cuales:
+     Producto tipo "a": 17
+     Producto tipo "b": 0
+     Producto tipo "c": 0
+     Producto tipo "d": 17
+     Producto tipo "e": 0
+     Producto tipo "f": 0
+     Producto tipo "g": 0
+     Producto tipo "h": 0
+     Producto tipo "i": 0
+     Producto tipo "j": 0
+
+Cliente consumidor: 1
+  Productos consumidos: 25. De los cuales:
+     Producto tipo "a": 13
+     Producto tipo "b": 0
+     Producto tipo "c": 0
+     Producto tipo "d": 12
+     Producto tipo "e": 0
+     Producto tipo "f": 0
+     Producto tipo "g": 0
+     Producto tipo "h": 0
+     Producto tipo "i": 0
+     Producto tipo "j": 0
+
+Cliente consumidor: 2
+  Productos consumidos: 1. De los cuales:
+     Producto tipo "a": 0
+     Producto tipo "b": 0
+     Producto tipo "c": 0
+     Producto tipo "d": 1
+     Producto tipo "e": 0
+     Producto tipo "f": 0
+     Producto tipo "g": 0
+     Producto tipo "h": 0
+     Producto tipo "i": 0
+     Producto tipo "j": 0
+
+Total de productos consumidos: 1
+     1 del proveedor 0.
+     0 del proveedor 1.
+     0 del proveedor 2.
+Cliente consumidor que mas ha consumido: 0

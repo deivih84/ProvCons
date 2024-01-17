@@ -183,6 +183,10 @@ void* proveedorFunc(void *arg) {
         exit(-1);
     }
 
+    // Inicializar totalProductos (Por si acaso)
+    for (int i = 0; i < NPRODUCTOS; ++i) {
+        totalProductos[i] = 0;
+    }
 
     // Formatear cadena
     sprintf(fichPath, "%s\\proveedor%d.dat", path, proveedorID);
@@ -299,12 +303,13 @@ void *consumidorFunc(void *arg) {
         buffer[itConsBuffer].tipo = ' ';
         buffer[itConsBuffer].proveedorID = -1;
 
-        sem_post(&hayEspacio);
 
         itConsBuffer = (itConsBuffer + 1) % tamBuffer;
 
         sem_post(&semaforoBuffer);
+        sem_post(&hayEspacio);
 
+        printf("  Fin:%d,ID:%d  ", contProvsAcabados == nProveedores, consumidorID);
         bandera = (contProvsAcabados == nProveedores) ? false : true;
     }
 
