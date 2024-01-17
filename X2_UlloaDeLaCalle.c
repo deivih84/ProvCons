@@ -41,9 +41,9 @@ int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0, tamBuffer, nProve
 ConsumidorInfo *listaConsumidores = NULL;
 
 // Declaración de funciones
-void proveedorFunc(int *arg);
+void* proveedorFunc(void *arg);
 
-void consumidorFunc(int *arg);
+void* consumidorFunc(void *arg);
 
 ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int productosConsumidosPorTipo[nProveedores][10], int ID);
 
@@ -59,6 +59,7 @@ bool esCadena(char *string);
 int main(int argc, char *argv[]) {
     char *dirpath = strdup(argv[1]); /////?
     char *fileName = strdup(argv[2]); /////?
+    int argHilosP[MAX_PROVEEDORES], argHilosC[MAX_PROVEEDORES];
     int k;
     FILE *file;
 
@@ -68,9 +69,9 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    //Verificación parámetros
+    // Verificación parámetros
 
-    //Verificar si los parámetros pasados son válidos o no. Si no, se pasa -1 para salir en el próximo if
+    // Verificar si los parámetros pasados son válidos o no. Si no, se pasa -1 para salir en el próximo if
     tamBuffer = (!esCadena(argv[3])) ? atoi(argv[3]) : -1;
     nProveedores = (!esCadena(argv[4])) ? atoi(argv[4]) : -1;
     nConsumidores = (!esCadena(argv[5])) ? atoi(argv[5]) : -1;
@@ -97,8 +98,9 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    //Prueba apertura de TODOS los ficheros para proveedores
+    // Prueba apertura de TODOS los ficheros para proveedores
     for (int i = 0; i < nProveedores; i++) {
+        // Formatear cadena
         sprintf(dirpath, "%s\\proveedor%d.dat", argv[1], i);
         file = fopen(dirpath, "r");
         if (file == NULL) {
@@ -130,16 +132,18 @@ int main(int argc, char *argv[]) {
 
 
     // Crear hilos proveedor
-    for (int contProv = 0; contProv < nProveedores; contProv++) {
-        pthread_create(&proveedorThread[contProv], NULL, (void *) proveedorFunc, &contProv);
-        printf("Hilo Proveedor %d lanzado.\n", contProv);
+    for (int i = 0; i < nProveedores; i++) {
+        // Configurar los argumentos para el hilo actual
+        argHilosP[i] = i;
+        pthread_create(&proveedorThread[i], NULL, (void *) proveedorFunc, &argHilosP[i]);
+        printf("Hilo Proveedor %d lanzado.\n", i);
     }
 
     // Crear hilos consumidor
-    for (int contCons = 0; contCons < nConsumidores; contCons++) {
-        copiarValor(&k, contCons);
-        pthread_create(&consumidorThread[contCons], NULL, (void *) consumidorFunc, &contCons);
-        printf("Hilo Consumidor %d lanzado.\n", contCons);
+    for (int j = 0; j < nConsumidores; j++) {
+        argHilosC[j] = j;
+        pthread_create(&consumidorThread[j], NULL, (void *) consumidorFunc, &argHilosC[j]);
+        printf("Hilo Consumidor %d lanzado.\n", j);
     }
 
 
@@ -167,17 +171,28 @@ int main(int argc, char *argv[]) {
 }
 
 // TODO pasar los argumentos como void (una lista de elementos para que no de core)
-void proveedorFunc(int *arg) {
+void* proveedorFunc(void *arg) {
     FILE *file, *outputFile;
     bool bandera = true;
-    char c, *fichPath = calloc(255, sizeof(char));
-    int productosLeidos = 0, productosValidos = 0, productosNoValidos = 0, proveedorID = *arg;
+    int productosLeidos = 0, productosValidos = 0, productosNoValidos = 0, proveedorID = *((int*) arg); ////////?
     int totalProductos[NPRODUCTOS];
+    char c, *fichPath = calloc(255, sizeof(char));
+    if (buffer == NULL) {
+        fprintf(stderr, "Error al asignar memoria para el búfer compartido.\n");
+        free(buffer);
+        exit(-1);
+    }
 
 
-    // Abrir el archivo de entrada del proveedor
+    // Formatear cadena
     sprintf(fichPath, "%s\\proveedor%d.dat", path, proveedorID);
+    // Abrir el archivo de entrada del proveedor
     file = fopen(fichPath, "r");
+    if (file == NULL) {
+        fprintf(stderr, "Error al abrir el archivo salida.");
+        fclose(file);
+        exit(-1);
+    }
 
     // Leer y procesar productos del archivo
     while (bandera) { //////////break?
@@ -191,7 +206,7 @@ void proveedorFunc(int *arg) {
             // Escribir en el búfer
             buffer[itProdBuffer].tipo = c;
             buffer[itProdBuffer].proveedorID = proveedorID;
-            sem_post(&hayDato); //////SEMAFORO hayDato
+            sem_post(&hayDato);
 
             itProdBuffer = (itProdBuffer + 1) % tamBuffer;
 
@@ -225,13 +240,14 @@ void proveedorFunc(int *arg) {
     // Escribir resultados en el fichero de salida
     sem_wait(&semaforoFichero);
 
+    // Formatear cadena
     sprintf(fichPath, "%s\\%s", path, fichDest);
 
     outputFile = fopen(fichDest, "a");
     if (outputFile == NULL) {
         fprintf(stderr, "Error al abrir el archivo de salida del proveedor %d.\n", 0);
-        free(buffer);
-        return;
+        fclose(outputFile);
+        exit(-1);
     }
 
     fprintf(outputFile, "Proveedor: %d.\n", proveedorID);
@@ -247,12 +263,12 @@ void proveedorFunc(int *arg) {
     // Cerrar el archivo de salida
     free(fichPath);
     fclose(outputFile);
+    return NULL; ///////////hace falta el return?
 }
 
-// TODO pasar los argumentos como void (una lista de elementos para que no de core)
-void consumidorFunc(int *arg) {
+void *consumidorFunc(void *arg) {
     bool bandera = true;
-    int numProdsConsumidosPorProveedor[nProveedores]['j' - 'a' + 1], numProdsConsumidos = 0, consumidorID = *arg;
+    int numProdsConsumidosPorProveedor[nProveedores]['j' - 'a' + 1], numProdsConsumidos = 0, consumidorID = *((int*) arg);
     Producto productoConsumido;
 
     // Incializar numProdsConsumidosPorProveedor[][] No sabes lo que hay en la memoria cuando vas a escribir.
@@ -303,9 +319,20 @@ void facturadorFunc() {
     FILE *outputFile;
     int i = 0, proveedores[nProveedores], tipos[10], consumidores[nConsumidores], suma = 0, maximo = 0, cons = 0;
     char *fichPath = calloc(255, sizeof(char));
+    if (buffer == NULL) {
+        fprintf(stderr, "Error al asignar memoria para el búfer compartido.\n");
+        free(buffer);
+        exit(-1);
+    }
+    // Formatear cadena
     sprintf(fichPath, "%s\\%s", path, fichDest);
 
     outputFile = fopen(fichPath, "a");
+    if (outputFile == NULL) {
+        fprintf(stderr, "Error al abrir el archivo salida.");
+        fclose(outputFile);
+        exit(-1);
+    }
 
     sem_wait(&semaforoLista);
 

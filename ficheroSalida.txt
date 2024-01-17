@@ -2,28 +2,28 @@ Proveedor: 0.
    Productos procesados: 15.
    Productos Inválidos: 5.
    Productos Válidos: 10. De los cuales se han insertado:
-     -1695768491 de tipo "a".
-     32765 de tipo "b".
-     -1609917284 de tipo "c".
-     32770 de tipo "d".
-     21651376 de tipo "e".
-     376 de tipo "f".
-     0 de tipo "g".
-     0 de tipo "h".
-     21651376 de tipo "i".
-     376 de tipo "j".
+     -687775771 de tipo "a".
+     456 de tipo "b".
+     0 de tipo "c".
+     5 de tipo "d".
+     -687775776 de tipo "e".
+     456 de tipo "f".
+     -687775776 de tipo "g".
+     456 de tipo "h".
+     -687775776 de tipo "i".
+     456 de tipo "j".
 Proveedor: 1.
    Productos procesados: 30.
    Productos Inválidos: 10.
    Productos Válidos: 20. De los cuales se han insertado:
      10 de tipo "a".
      0 de tipo "b".
-     -1581381696 de tipo "c".
-     32775 de tipo "d".
+     -1 de tipo "c".
+     9 de tipo "d".
      0 de tipo "e".
      0 de tipo "f".
-     -1 de tipo "g".
-     -1 de tipo "h".
+     744894024 de tipo "g".
+     32765 de tipo "h".
      0 de tipo "i".
      0 de tipo "j".
 Proveedor: 2.
@@ -32,30 +32,11 @@ Proveedor: 2.
    Productos Válidos: 30. De los cuales se han insertado:
      15 de tipo "a".
      0 de tipo "b".
-     -1581381696 de tipo "c".
-     32780 de tipo "d".
+     -1 de tipo "c".
+     14 de tipo "d".
      0 de tipo "e".
      0 de tipo "f".
-     -1 de tipo "g".
-     -1 de tipo "h".
+     744894024 de tipo "g".
+     32765 de tipo "h".
      0 de tipo "i".
      0 de tipo "j".
-
-Cliente consumidor: 0
-  Productos consumidos: 60. De los cuales:
-     Producto tipo "a": 30
-     Producto tipo "b": 0
-     Producto tipo "c": 0
-     Producto tipo "d": 30
-     Producto tipo "e": 0
-     Producto tipo "f": 0
-     Producto tipo "g": 0
-     Producto tipo "h": 0
-     Producto tipo "i": 0
-     Producto tipo "j": 0
-
-Total de productos consumidos: 60
-     10 del proveedor 0.
-     20 del proveedor 1.
-     30 del proveedor 2.
-Cliente consumidor que mas ha consumido: 0
