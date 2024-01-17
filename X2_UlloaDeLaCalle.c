@@ -283,7 +283,12 @@ void *consumidorFunc(void *arg) {
     }
 
     // Consumir productos del búfer
-    while (bandera) {
+    while (contProvsAcabados != nProveedores) {
+
+        if (contProvsAcabados == nProveedores) { /////////// Se puede usar break?
+            break;
+        }
+
         sem_wait(&hayDato);
 
         // Leer del buffer
@@ -309,7 +314,7 @@ void *consumidorFunc(void *arg) {
         sem_post(&semaforoBuffer);
         sem_post(&hayEspacio);
 
-        printf("  Fin:%d,ID:%d  ", contProvsAcabados == nProveedores, consumidorID);
+        printf("  Fin:%d|ID:%d  ", contProvsAcabados == nProveedores, consumidorID);
         bandera = (contProvsAcabados == nProveedores) ? false : true;
     }
 
