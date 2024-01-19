@@ -29,7 +29,7 @@ typedef struct {
 typedef struct nodo {
     int consumidorID;
     int productosConsumidos;
-    int productosConsumidosPorTipo[7]['j' - 'a' + 1];
+    int **productosConsumidosPorTipo; //[7]['j' - 'a' + 1]
     struct nodo *siguiente;
 } ConsumidorInfo;
 
@@ -38,7 +38,7 @@ sem_t semaforoFichero, semContC, semContP, semaforoLista, hayEspacio, hayDato;
 Producto *buffer;
 char *path, *fichDest;
 int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0, tamBuffer, nProveedores, nConsumidores;
-ConsumidorInfo *listaConsumidores = NULL;
+ConsumidorInfo *nodoPrincipal = NULL, *nodoActual = NULL;
 
 // Declaración de funciones
 void* proveedorFunc(void *arg);
@@ -47,7 +47,9 @@ void* consumidorFunc(void *arg);
 
 ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int **productosConsumidosPorTipo, int ID);
 
-void facturadorFunc();
+void liberarLista(ConsumidorInfo *nodoP);
+
+void* facturadorFunc();
 
 bool esTipoValido(char c);
 
@@ -327,13 +329,16 @@ void *consumidorFunc(void *arg) {
 
     // Escribe en la lista el producto leido del buffer
     sem_wait(&semaforoLista);
-    listaConsumidores = agregarConsumidor(listaConsumidores, numProdsConsumidos, numProdsConsumidosPorProveedor,consumidorID); //hay que pasarle prodConsPorTipo
+    if (nodoActual == NULL) { // Primera vez escribiendo en la lista
+
+    }
+    nodoActual = agregarConsumidor(nodoActual, numProdsConsumidos, numProdsConsumidosPorProveedor, consumidorID); //hay que pasarle prodConsPorTipo
     sem_post(&semaforoLista);
     pthread_exit(NULL);
 }
 
 
-void facturadorFunc() {
+void* facturadorFunc() {
     FILE *outputFile;
     int i = 0, proveedores[nProveedores], tipos[10], consumidores[nConsumidores], suma = 0, maximo = 0, cons = 0;
     char *fichPath = calloc(255, sizeof(char));
@@ -357,7 +362,7 @@ void facturadorFunc() {
         consumidores[k] = 0;
     }
     // Agregar a la lista
-    while (listaConsumidores != NULL) {
+    while (nodoActual != NULL) {
         for (int k = 0; k < nProveedores; ++k) { // Inicializar array proveedores
             proveedores[k] = 0;
         }
@@ -366,23 +371,23 @@ void facturadorFunc() {
         }
         for (int j = 0; j < nProveedores; ++j) {
             for (int k = 0; k < 10; ++k) {
-                proveedores[j] += listaConsumidores->productosConsumidosPorTipo[j][k];
+                proveedores[j] += nodoActual->productosConsumidosPorTipo[j][k];
             }
         }
         for (int j = 0; j < 10; ++j) { // Contar cuantos productos se han consumido por tipo entre todos los proveedores
             for (int k = 0; k < nProveedores; ++k) {
-                tipos[j] += listaConsumidores->productosConsumidosPorTipo[k][j];
+                tipos[j] += nodoActual->productosConsumidosPorTipo[k][j];
             }
         }
-        consumidores[i] = listaConsumidores->productosConsumidos; // Para sacar el que más ha consumido más tarde
+        consumidores[i] = nodoActual->productosConsumidos; // Para sacar el que más ha consumido más tarde
 
         fprintf(outputFile, "\nCliente consumidor: %d\n", i);
-        fprintf(outputFile, "  Productos consumidos: %d. De los cuales:\n", listaConsumidores->productosConsumidos);
+        fprintf(outputFile, "  Productos consumidos: %d. De los cuales:\n", nodoActual->productosConsumidos);
 
         for (int tipo = 0; tipo < ('j' - 'a' + 1); ++tipo) {
             fprintf(outputFile, "     Producto tipo \"%c\": %d\n", (char) (tipo + 'a'), tipos[tipo]);
         }
-        listaConsumidores = listaConsumidores->siguiente;
+        nodoActual = nodoActual->siguiente;
         i++;
     }
     for (int j = 0; j < nProveedores; ++j) { // Total de productos
@@ -401,6 +406,7 @@ void facturadorFunc() {
     fprintf(outputFile, "Cliente consumidor que mas ha consumido: %d\n", cons);
 
     sem_post(&semaforoLista);
+    liberarLista(nodoPrincipal);
     free(fichPath);
     fclose(outputFile);
     pthread_exit(NULL);
@@ -428,15 +434,16 @@ ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos,
     ConsumidorInfo *nuevoConsumidor;
     ConsumidorInfo *aux;
     nuevoConsumidor = (ConsumidorInfo *) calloc(1,sizeof(ConsumidorInfo));
+    if (nuevoConsumidor == NULL) {
+        fprintf(stderr, "Error al asignar memoria para el nuevo nodo de la lista enlazada.\n");
+        exit(-1);
+    }
     nuevoConsumidor->productosConsumidos = productosConsumidos;
-
-    // Se copia el array de productos consumidos por tipo
-    ///////////////////////////////////////////////////////////////////////////
-    memcpy(nuevoConsumidor->productosConsumidosPorTipo, productosConsumidosPorTipo, sizeof(nuevoConsumidor->productosConsumidosPorTipo));
-    ///////////////////////////////////////////////////////////////////////////
+    nuevoConsumidor->productosConsumidosPorTipo = productosConsumidosPorTipo;
     nuevoConsumidor->consumidorID = ID;
     nuevoConsumidor->siguiente = NULL;
-    if (nodo == NULL) {
+    if (nodo == NULL) { // Debe de ser el primer nodo
+        nodoPrincipal = nodo;
         nodo = nuevoConsumidor;
     } else {
         aux = nodo;
@@ -446,4 +453,16 @@ ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos,
         aux->siguiente = nuevoConsumidor;
     }
     return nodo;
+}
+void liberarLista(ConsumidorInfo *nodoP) { // Función para liberar la lista enlazada ahora que ya no se necesita
+    ConsumidorInfo *actual = nodoP;
+    ConsumidorInfo *siguiente;
+
+    while (actual != NULL) {
+        siguiente = actual->siguiente;
+
+        // Libera la memoria del nodo
+        free(actual);
+        actual = siguiente;
+    }
 }
