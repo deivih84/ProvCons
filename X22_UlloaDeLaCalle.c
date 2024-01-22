@@ -34,7 +34,7 @@ typedef struct nodo {
 } ConsumidorInfo;
 
 // Variables GLOBALES :)
-sem_t semaforoFichero, semContC, semContP, semaforoLista, hayEspacio, hayDato;
+sem_t semaforoFichero, semContC, semContP, consAcabados, hayEspacio, hayDato;
 Producto *buffer;
 char *path, *fichDest;
 int contProvsAcabados = 0, tamBuffer, nProveedores, nConsumidores;
@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
 
     sem_init(&hayEspacio, 0, tamBuffer);
     sem_init(&semaforoFichero, 0, 1);
-    sem_init(&semaforoLista, 0, 1);
+    sem_init(&consAcabados, 0, 1);
     sem_init(&semContP, 0, 1); // Semáforo para el contador de proveedores
     sem_init(&semContC, 0, 1); // Semáforo para el contador de consumidores
     sem_init(&hayDato, 0, 0);
@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
     sem_destroy(&semaforoFichero);
     sem_destroy(&semContP);
     sem_destroy(&semContC);
-    sem_destroy(&semaforoLista);
+    sem_destroy(&consAcabados);
     sem_destroy(&hayEspacio);
     sem_destroy(&hayDato);
 
@@ -176,7 +176,6 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-// TODO pasar los argumentos como void (una lista de elementos para que no de core)
 void* proveedorFunc(void *arg) {
     FILE *file, *outputFile;
     bool bandera = true;
@@ -308,7 +307,7 @@ void *consumidorFunc(void *arg) {
 
     //  HE PUESTO SOLO LA BANDERA PORQUE LO OTRO ERA VOLVER A REPETIRLO
     // Consumir productos del búfer
-    while (!bandera) {
+    while (bandera) {
 
         sem_wait(&hayDato);
 
@@ -335,12 +334,12 @@ void *consumidorFunc(void *arg) {
     }
 
     // Escribe en la lista el producto leido del buffer
-    sem_wait(&semaforoLista);
+    sem_wait(&consAcabados);
     if (nodoActual == NULL) { // Primera vez escribiendo en la lista
 
     }
     nodoActual = agregarConsumidor(nodoActual, numProdsConsumidos, numProdsConsumidosPorProveedor, consumidorID); //hay que pasarle prodConsPorTipo
-    sem_post(&semaforoLista);
+    sem_post(&consAcabados);
     pthread_exit(NULL);
 }
 
@@ -363,7 +362,7 @@ void* facturadorFunc() {
         exit(-1);
     }
 
-    sem_wait(&semaforoLista);
+    sem_wait(&consAcabados);
 
     for (int k = 0; k < nConsumidores; ++k) { // Inicializar array consumidores
         consumidores[k] = 0;
@@ -413,7 +412,7 @@ void* facturadorFunc() {
     }
     fprintf(outputFile, "Cliente consumidor que mas ha consumido: %d\n", cons);
 
-    sem_post(&semaforoLista);
+    sem_post(&consAcabados);
     liberarLista(nodoPrincipal);
     free(fichPath);
     fclose(outputFile);
