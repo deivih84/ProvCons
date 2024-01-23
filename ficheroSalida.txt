@@ -40,3 +40,48 @@ Proveedor: 2.
      0 de tipo "h".
      0 de tipo "i".
      0 de tipo "j".
+
+Cliente consumidor: 0
+  Productos consumidos: 60. De los cuales:
+     Producto tipo "a": 30
+     Producto tipo "b": 0
+     Producto tipo "c": 0
+     Producto tipo "d": 30
+     Producto tipo "e": 0
+     Producto tipo "f": 0
+     Producto tipo "g": 0
+     Producto tipo "h": 0
+     Producto tipo "i": 0
+     Producto tipo "j": 0
+
+Cliente consumidor: 1
+  Productos consumidos: 0. De los cuales:
+     Producto tipo "a": 0
+     Producto tipo "b": 0
+     Producto tipo "c": 0
+     Producto tipo "d": 0
+     Producto tipo "e": 0
+     Producto tipo "f": 0
+     Producto tipo "g": 0
+     Producto tipo "h": 0
+     Producto tipo "i": 0
+     Producto tipo "j": 0
+
+Cliente consumidor: 2
+  Productos consumidos: 0. De los cuales:
+     Producto tipo "a": 0
+     Producto tipo "b": 0
+     Producto tipo "c": 0
+     Producto tipo "d": 0
+     Producto tipo "e": 0
+     Producto tipo "f": 0
+     Producto tipo "g": 0
+     Producto tipo "h": 0
+     Producto tipo "i": 0
+     Producto tipo "j": 0
+
+Total de productos consumidos: 0
+     0 del proveedor 0.
+     0 del proveedor 1.
+     0 del proveedor 2.
+Cliente consumidor que mas ha consumido: 0

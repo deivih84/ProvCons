@@ -34,7 +34,7 @@ typedef struct nodo {
 } ConsumidorInfo;
 
 // Variables GLOBALES :)
-sem_t semaforoFichero, semContC, semContP, consAcabados, hayEspacio, hayDato, adelanteFacturador;
+sem_t semaforoFichero, semContC, semContP, sem_consAcabados, hayEspacio, hayDato, adelanteFacturador;
 Producto *buffer;
 char *path, *fichDest;
 int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0, tamBuffer, nProveedores, nConsumidores;
@@ -142,7 +142,7 @@ int main(int argc, char *argv[]) {
 
     sem_init(&hayEspacio, 0, tamBuffer);
     sem_init(&semaforoFichero, 0, 1);
-    sem_init(&consAcabados, 0, 0);
+    sem_init(&sem_consAcabados, 0, 0);
     sem_init(&semContP, 0, 1); // Semáforo para el contador de proveedores
     sem_init(&semContC, 0, 1); // Semáforo para el contador de consumidores
     sem_init(&hayDato, 0, 0);
@@ -166,6 +166,7 @@ int main(int argc, char *argv[]) {
 
     // Crear hilo del facturadorFunc
     pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, NULL);
+    printf("Hilo Facturador lanzado.\n");
 
     // Esperar a que los hilos terminen
     for (int i = 0; i < nProveedores; i++) {
@@ -181,7 +182,7 @@ int main(int argc, char *argv[]) {
     sem_destroy(&semaforoFichero);
     sem_destroy(&semContP);
     sem_destroy(&semContC);
-    sem_destroy(&consAcabados);
+    sem_destroy(&sem_consAcabados);
     sem_destroy(&hayEspacio);
     sem_destroy(&hayDato);
     sem_destroy(&adelanteFacturador);
@@ -218,17 +219,19 @@ void* proveedorFunc(void *arg) {
     }
 
     // Leer y procesar productos del archivo
-    while (bandera) { //////////break?
+    while (bandera) {
 
         sem_wait(&hayEspacio);
 
         c = (char) fgetc(file);
 
         // Section crítica del índice de Proveedores
-        sem_wait(&semContP);
-        indiceProveedor = itProdBuffer;
-        itProdBuffer = (itProdBuffer + 1) % tamBuffer;
-        sem_post(&semContP);
+        if (esTipoValido(c)){
+            sem_wait(&semContP);
+            indiceProveedor = itProdBuffer;
+            itProdBuffer = (itProdBuffer + 1) % tamBuffer;
+            sem_post(&semContP);
+        }
 
 
         if (c >= 'a' && c <= 'j') {
@@ -285,8 +288,9 @@ void* proveedorFunc(void *arg) {
 }
 
 void *consumidorFunc(void *arg) {
-    int bandera = 1;
-    int numProdsConsumidos = 0, consumidorID = *((int*) arg), indiceConsumidor;
+    bool bandera = true;
+    int numProdsConsumidos = 0, consumidorID = *((int*) arg);
+    Producto producto;
 
     int** numProdsConsumidosPorProveedor = (int**) calloc(nProveedores, sizeof(int*));
     if (numProdsConsumidosPorProveedor == NULL) {
@@ -300,7 +304,6 @@ void *consumidorFunc(void *arg) {
             exit(-1);
         }
     }
-    printf("__%d__", numProdsConsumidosPorProveedor[1][8]);
 
     // Incializar numProdsConsumidosPorProveedor[][] No sabes lo que hay en la memoria cuando vas a escribir.
     for (int i = 0; i < nProveedores; i++) {
@@ -311,42 +314,36 @@ void *consumidorFunc(void *arg) {
 
     // Consumir productos del búfer
 
-    while (bandera) { //contProvsAcabados != nProveedores
-        printf("||||||||||||||");
+    while (bandera && contProvsAcabados != nProveedores) { //contProvsAcabados != nProveedores
 
-        if (contProvsAcabados == 3) {
-            bandera = 0;
+        if (contProvsAcabados != nProveedores) {
+            sem_wait(&hayDato);
         }
-
-        sem_wait(&hayDato);
 
         // Leer del buffer
         sem_wait(&semContC);
-        indiceConsumidor = itConsBuffer;
+        producto = buffer[itConsBuffer];
         itConsBuffer = (itConsBuffer + 1) % tamBuffer;
         sem_post(&semContC);
 
-        if ('a' <= buffer[indiceConsumidor].tipo && buffer[indiceConsumidor].tipo < ('a' + NPRODUCTOS)) { //Está entre 'a' y 'j'
+        if ('a' <= producto.tipo && producto.tipo < ('a' + NPRODUCTOS)) { //Está entre 'a' y 'j'
             numProdsConsumidos++; // Incremento de contador general
-            numProdsConsumidosPorProveedor[buffer[indiceConsumidor].proveedorID][buffer[indiceConsumidor].tipo - 'a']++; // Incremento de contador del tipo correspondiente
-        } else if (buffer[indiceConsumidor].tipo == 'F'){
-            contProvsAcabados += 1;
-            sem_post(consAcabados);
+            numProdsConsumidosPorProveedor[producto.proveedorID][producto.tipo - 'a']++; // Incremento de contador del tipo correspondiente
+        } else if (producto.tipo == 'F'){
+            contProvsAcabados++;
         }
 
         sem_post(&hayEspacio);
+        if (contProvsAcabados == nProveedores) {
+            bandera = false;
+        }
 
         //printf("  Fin:%d|ID:%d  ", contProvsAcabados == nProveedores, consumidorID);
-        printf(" |%d|%d| ", contProvsAcabados != nProveedores, consumidorID);
+        //printf(" |%d|%d| ", contProvsAcabados != nProveedores, consumidorID);
 
     }
 
-    // Escribe en la lista el producto leido del buffer
-    if (nodoActual == NULL) { // Primera vez escribiendo en la lista
-
-    }
     nodoActual = agregarConsumidor(nodoActual, numProdsConsumidos, numProdsConsumidosPorProveedor, consumidorID); //hay que pasarle prodConsPorTipo
-    printf("  Nodo %d agregado.  ", consumidorID);
     sem_post(&adelanteFacturador);
     pthread_exit(NULL);
 }
@@ -354,11 +351,25 @@ void *consumidorFunc(void *arg) {
 
 void* facturadorFunc() {
     FILE *outputFile;
-    int i = 0, proveedores[nProveedores], tipos[10], consumidores[nConsumidores], suma = 0, maximo = 0, cons = 0;
-    char *fichPath = calloc(255, sizeof(char));
+    int tipos[10], *proveedores, *consumidores, suma = 0, maximo = 0, cons = 0;
+    char *fichPath;
+
+    proveedores = calloc(nProveedores, sizeof(int));
+    if (proveedores == NULL) {
+        fprintf(stderr, "Error al asignar memoria para el array de proveedores.\n");
+        free(proveedores);
+        exit(-1);
+    }
+    consumidores = calloc(nConsumidores, sizeof(int));
+    if (consumidores == NULL) {
+        fprintf(stderr, "Error al asignar memoria para el array de consumidores.\n");
+        free(consumidores);
+        exit(-1);
+    }
+    fichPath = calloc(255, sizeof(char));
     if (fichPath == NULL) {
-        fprintf(stderr, "Error al asignar memoria para el búfer compartido.\n");
-        free(buffer);
+        fprintf(stderr, "Error al asignar memoria para fichPath.\n");
+        free(fichPath);
         exit(-1);
     }
 
@@ -371,13 +382,14 @@ void* facturadorFunc() {
         exit(-1);
     }
 
-    for (int k = 0; k < nConsumidores; ++k) { // Inicializar array consumidores
+    for (int k = 0; k < nConsumidores; k++) { // Inicializar array consumidores
         consumidores[k] = 0;
     }
-    // Agregar a la lista
-    while (i < nProveedores) {
+
+
+    // Procesar
+    for (int i = 0; i < nConsumidores; i++) {
         sem_wait(&adelanteFacturador);
-        printf("||||||||||||||");
         for (int k = 0; k < nProveedores; ++k) { // Inicializar array proveedores
             proveedores[k] = 0;
         }
@@ -396,14 +408,13 @@ void* facturadorFunc() {
         }
         consumidores[i] = nodoActual->productosConsumidos; // Para sacar el que más ha consumido más tarde
 
-        fprintf(outputFile, "\nCliente consumidor: %d\n", i);
+        fprintf(outputFile, "\nCliente consumidor: %d\n", nodoActual->consumidorID);
         fprintf(outputFile, "  Productos consumidos: %d. De los cuales:\n", nodoActual->productosConsumidos);
 
         for (int tipo = 0; tipo < (NPRODUCTOS); ++tipo) {
             fprintf(outputFile, "     Producto tipo \"%c\": %d\n", (char) (tipo + 'a'), tipos[tipo]);
         }
         nodoActual = nodoActual->siguiente;
-        i++;
     }
     for (int j = 0; j < nProveedores; ++j) { // Total de productos
         suma += proveedores[j];
