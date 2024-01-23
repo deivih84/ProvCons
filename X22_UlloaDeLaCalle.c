@@ -34,7 +34,7 @@ typedef struct nodo {
 } ConsumidorInfo;
 
 // Variables GLOBALES :)
-sem_t semaforoFichero, semContC, semContP, sem_consAcabados, hayEspacio, hayDato;
+sem_t semaforoFichero, semContC, semContP, agregarAListaEnl, hayEspacio, hayDato;
 Producto *buffer;
 char *path, *fichDest;
 int contProvsAcabados = 0, tamBuffer, nProveedores, nConsumidores;
@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
 
     sem_init(&hayEspacio, 0, tamBuffer);
     sem_init(&semaforoFichero, 0, 1);
-    sem_init(&sem_consAcabados, 0, 1);
+    sem_init(&agregarAListaEnl, 0, 1);
     sem_init(&semContP, 0, 1); // Semáforo para el contador de proveedores
     sem_init(&semContC, 0, 1); // Semáforo para el contador de consumidores
     sem_init(&hayDato, 0, 0);
@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
     sem_destroy(&semaforoFichero);
     sem_destroy(&semContP);
     sem_destroy(&semContC);
-    sem_destroy(&sem_consAcabados);
+    sem_destroy(&agregarAListaEnl);
     sem_destroy(&hayEspacio);
     sem_destroy(&hayDato);
 
@@ -334,12 +334,12 @@ void *consumidorFunc(void *arg) {
     }
 
     // Escribe en la lista el producto leido del buffer
-    sem_wait(&sem_consAcabados);
+    sem_wait(&agregarAListaEnl);
     if (nodoActual == NULL) { // Primera vez escribiendo en la lista
 
     }
     nodoActual = agregarConsumidor(nodoActual, numProdsConsumidos, numProdsConsumidosPorProveedor, consumidorID); //hay que pasarle prodConsPorTipo
-    sem_post(&sem_consAcabados);
+    sem_post(&agregarAListaEnl);
     pthread_exit(NULL);
 }
 
@@ -362,7 +362,7 @@ void* facturadorFunc() {
         exit(-1);
     }
 
-    sem_wait(&sem_consAcabados);
+    sem_wait(&agregarAListaEnl);
 
     for (int k = 0; k < nConsumidores; ++k) { // Inicializar array consumidores
         consumidores[k] = 0;
@@ -412,7 +412,7 @@ void* facturadorFunc() {
     }
     fprintf(outputFile, "Cliente consumidor que mas ha consumido: %d\n", cons);
 
-    sem_post(&sem_consAcabados);
+    sem_post(&agregarAListaEnl);
     liberarLista(nodoPrincipal);
     free(fichPath);
     fclose(outputFile);

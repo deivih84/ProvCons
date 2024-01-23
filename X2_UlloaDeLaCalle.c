@@ -34,7 +34,7 @@ typedef struct nodo {
 } ConsumidorInfo;
 
 // Variables GLOBALES :)
-sem_t semaforoFichero, semContC, semContP, sem_consAcabados, hayEspacio, hayDato, adelanteFacturador, proveedoresAcabados;
+sem_t semaforoFichero, semContC, semContP, agregarAListaEnl, hayEspacio, hayDato, adelanteFacturador, proveedoresAcabados;
 Producto *buffer;
 char *path, *fichDest;
 int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0, tamBuffer, nProveedores, nConsumidores;
@@ -140,12 +140,12 @@ int main(int argc, char *argv[]) {
 
     sem_init(&hayEspacio, 0, tamBuffer);
     sem_init(&semaforoFichero, 0, 1);
-    sem_init(&sem_consAcabados, 0, 0);
+    sem_init(&agregarAListaEnl, 0, 1);
     sem_init(&semContP, 0, 1); // Semáforo para el contador de proveedores
     sem_init(&semContC, 0, 1); // Semáforo para el contador de consumidores
     sem_init(&hayDato, 0, 0);
     sem_init(&adelanteFacturador, 0, 0);
-    sem_init(&proveedoresAcabados, 0, -5);
+    sem_init(&proveedoresAcabados, 0, -nProveedores);
 
 
     for (int i = 0; i < nProveedores; ++i) {
@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
     // Crear hilos consumidor
     for (int j = 0; j < nConsumidores; j++) {
         pthread_create(&consumidorThread[j], NULL, (void *) consumidorFunc, &argHilosC[j]);
-        printf("Hilo Consumidor %d lanzado.\n", j);
+        //printf("Hilo Consumidor %d lanzado.\n", j);
     }
 
     // Crear hilo del facturadorFunc
@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
     sem_destroy(&semaforoFichero);
     sem_destroy(&semContP);
     sem_destroy(&semContC);
-    sem_destroy(&sem_consAcabados);
+    sem_destroy(&agregarAListaEnl);
     sem_destroy(&hayEspacio);
     sem_destroy(&hayDato);
     sem_destroy(&adelanteFacturador);
@@ -345,9 +345,9 @@ void *consumidorFunc(void *arg) {
             numProdsConsumidos++; // Incremento de contador general
             numProdsConsumidosPorProveedor[producto.proveedorID][producto.tipo - 'a']++; // Incremento de contador del tipo correspondiente
         } else if (producto.tipo == 'F'){
-            //sem_wait(&sem_consAcabados);
+            //sem_wait(&agregarAListaEnl);
             contProvsAcabados++;
-            //sem_post(&sem_consAcabados);
+            //sem_post(&agregarAListaEnl);
         }
         //printf(" (%c,%d) ", producto.tipo, consumidorID);
 
@@ -357,11 +357,13 @@ void *consumidorFunc(void *arg) {
         }
     }
 
+    sem_wait(&agregarAListaEnl);
     nodoActual = agregarConsumidor(nodoActual, numProdsConsumidos, numProdsConsumidosPorProveedor, consumidorID); //hay que pasarle prodConsPorTipo
+    sem_post(&agregarAListaEnl);
+
     sem_post(&adelanteFacturador);
     pthread_exit(NULL);
 }
-
 
 void* facturadorFunc() {
     FILE *outputFile = NULL;
