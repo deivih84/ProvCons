@@ -1,16 +1,11 @@
 //
 // Autores Ivan Ulloa Gómez 12343449Q y David de la Calle Azahares 71231179H del grupo de prácticas L2
 //
-// Hemos estado haciéndolo en Clion y Replit y en ninguno de los dos nos ha dado problema, si embargo al probar en jair
-// nos da una violación de segmento, suponemos que por usar strdup :(
-// Aparte de eso funciona bien para varios proveedores y consumidores
-//
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <stdbool.h>
 #include <pthread.h>
 #include <semaphore.h>
 
@@ -29,12 +24,12 @@ typedef struct {
 typedef struct nodo {
     int consumidorID;
     int productosConsumidos;
-    int **productosConsumidosPorTipo; //[7]['j' - 'a' + 1]
+    int **productosConsumidosPorTipo;
     struct nodo *siguiente;
 } ConsumidorInfo;
 
 // Variables GLOBALES :)
-sem_t semaforoFichero, semContC, semContP, agregarAListaEnl, hayEspacio, hayDato, adelanteFacturador, proveedoresAcabados;
+sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, proveedoresAcabados;
 Producto *buffer;
 char *path, *fichDest;
 int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0, tamBuffer, nProveedores, nConsumidores;
@@ -51,9 +46,9 @@ void liberarLista(ConsumidorInfo *nodoP);
 
 void* facturadorFunc();
 
-bool esTipoValido(char c);
+int esTipoValido(char c);
 
-bool esCadena(char *string);
+int esCadena(char *string);
 
 
 int main(int argc, char *argv[]) {
@@ -140,13 +135,11 @@ int main(int argc, char *argv[]) {
 
     sem_init(&hayEspacio, 0, tamBuffer);
     sem_init(&semaforoFichero, 0, 1);
-    sem_init(&agregarAListaEnl, 0, 1);
     sem_init(&semContP, 0, 1); // Semáforo para el contador de proveedores
     sem_init(&semContC, 0, 1); // Semáforo para el contador de consumidores
     sem_init(&hayDato, 0, 0);
     sem_init(&adelanteFacturador, 0, 0);
     sem_init(&proveedoresAcabados, 0, -nProveedores);
-
 
     for (int i = 0; i < nProveedores; ++i) {
         argHilosP[i] = i;
@@ -160,7 +153,7 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < nProveedores; i++) {
         // Configurar los argumentos para el hilo actual
         pthread_create(&proveedorThread[i], NULL, (void *) proveedorFunc, &argHilosP[i]);
-        printf("Hilo Proveedor %d lanzado.\n", i);
+        //       printf("Hilo Proveedor %d lanzado.\n", i);
     }
 
     // Crear hilos consumidor
@@ -170,7 +163,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Crear hilo del facturadorFunc
-    pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, NULL);
+    pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, NULL); // No se le pasa nada a facturador
 
     // Esperar a que los hilos terminen
     for (int i = 0; i < nProveedores; i++) {
@@ -186,23 +179,19 @@ int main(int argc, char *argv[]) {
     sem_destroy(&semaforoFichero);
     sem_destroy(&semContP);
     sem_destroy(&semContC);
-    sem_destroy(&agregarAListaEnl);
     sem_destroy(&hayEspacio);
     sem_destroy(&hayDato);
     sem_destroy(&adelanteFacturador);
     sem_destroy(&proveedoresAcabados);
 
     free(dirpath);
-    free(path);
-    free(fichDest);
     free(buffer);
-    return 0;
 }
 
 void* proveedorFunc(void *arg) {
     FILE *file, *outputFile;
-    bool bandera = true;
-    int productosLeidos = 0, productosValidos = 0, proveedorID = *((int*) arg), indiceProveedor; ////////?
+    int bandera = 1;
+    int productosLeidos = 0, productosValidos = 0, proveedorID = *((int*) arg), indiceProveedor;
     int *totalProductos;
 
     char c, *fichPath = calloc(255, sizeof(char));
@@ -229,13 +218,11 @@ void* proveedorFunc(void *arg) {
     file = fopen(fichPath, "r");
     if (file == NULL) {
         fprintf(stderr, "Error al abrir el archivo salida.");
-        fclose(file);
         exit(-1);
     }
 
     // Leer y procesar productos del archivo
     while (bandera) {
-
         sem_wait(&hayEspacio);
 
         c = (char) fgetc(file);
@@ -266,7 +253,7 @@ void* proveedorFunc(void *arg) {
             buffer[indiceProveedor].proveedorID = proveedorID;
 
             sem_post(&hayDato);
-            bandera = false;
+            bandera = 0;
 
         } else { // Procesar productos no válidos
             productosLeidos++;
@@ -275,7 +262,6 @@ void* proveedorFunc(void *arg) {
     fclose(file); // Cerrar el archivo
 
     // Escribir resultados en el fichero de salida
-    sem_wait(&semaforoFichero);
 
     // Formatear cadena
     sprintf(fichPath, "%s/%s", path, fichDest);
@@ -286,6 +272,8 @@ void* proveedorFunc(void *arg) {
         exit(-1);
     }
 
+    // Sección crítica fichero
+    sem_wait(&semaforoFichero);
     fprintf(outputFile, "Proveedor: %d.\n", proveedorID);
     fprintf(outputFile, "   Productos procesados: %d.\n", productosLeidos);
     fprintf(outputFile, "   Productos Inválidos: %d.\n", productosLeidos - productosValidos);
@@ -305,7 +293,7 @@ void* proveedorFunc(void *arg) {
 }
 
 void *consumidorFunc(void *arg) {
-    bool bandera = true;
+    int bandera = 1;
     int numProdsConsumidos = 0, consumidorID = *((int*) arg);
     Producto producto;
 
@@ -332,7 +320,6 @@ void *consumidorFunc(void *arg) {
     // Consumir productos del búfer
 
     while (bandera && contProvsAcabados != nProveedores) { //contProvsAcabados != nProveedores
-
         sem_wait(&hayDato);
 
         // Sección crítica
@@ -345,21 +332,16 @@ void *consumidorFunc(void *arg) {
             numProdsConsumidos++; // Incremento de contador general
             numProdsConsumidosPorProveedor[producto.proveedorID][producto.tipo - 'a']++; // Incremento de contador del tipo correspondiente
         } else if (producto.tipo == 'F'){
-            //sem_wait(&agregarAListaEnl);
             contProvsAcabados++;
-            //sem_post(&agregarAListaEnl);
         }
-        //printf(" (%c,%d) ", producto.tipo, consumidorID);
 
         sem_post(&hayEspacio);
         if (contProvsAcabados == nProveedores) {
-            bandera = false;
+            bandera = 0;
         }
     }
 
-    sem_wait(&agregarAListaEnl);
     nodoActual = agregarConsumidor(nodoActual, numProdsConsumidos, numProdsConsumidosPorProveedor, consumidorID); //hay que pasarle prodConsPorTipo
-    sem_post(&agregarAListaEnl);
 
     sem_post(&adelanteFacturador);
     pthread_exit(NULL);
@@ -459,15 +441,15 @@ void* facturadorFunc() {
 }
 
 // Devuelve True si está entre a y j (incluidas)
-bool esTipoValido(char c) { return ((c >= 'a' && c <= 'j') || c == EOF); }
+int esTipoValido(char c) { return ((c >= 'a' && c <= 'j') || c == EOF); }
 
-bool esCadena(char *cadena) {
+int esCadena(char *cadena) {
     for (int i = 0; i < strlen(cadena); ++i) {
         if (!isdigit(cadena[i])) {
-            return true; // Devuelve 1 si no es una cadena de dígitos
+            return 1; // Devuelve 1 si no es una cadena de dígitos
         }
     }
-    return false; // Devuelve 0 si es una cadena de dígitos
+    return 0; // Devuelve 0 si es una cadena de dígitos
 }
 
 
