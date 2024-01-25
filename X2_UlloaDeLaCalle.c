@@ -29,7 +29,7 @@ typedef struct nodo {
 } ConsumidorInfo;
 
 // Variables GLOBALES :)
-sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, proveedoresAcabados;
+sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, proveedoresAcabados, semContProbsAcabados;
 Producto *buffer;
 char *path, *fichDest;
 int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0, tamBuffer, nProveedores, nConsumidores;
@@ -140,6 +140,7 @@ int main(int argc, char *argv[]) {
     sem_init(&hayDato, 0, 0);
     sem_init(&adelanteFacturador, 0, 0);
     sem_init(&proveedoresAcabados, 0, -nProveedores);
+    sem_init(&semContProbsAcabados, 0, 1);
 
     for (int i = 0; i < nProveedores; ++i) {
         argHilosP[i] = i;
@@ -183,6 +184,7 @@ int main(int argc, char *argv[]) {
     sem_destroy(&hayDato);
     sem_destroy(&adelanteFacturador);
     sem_destroy(&proveedoresAcabados);
+    sem_destroy(&semContProbsAcabados);
 
     free(dirpath);
     free(buffer);
@@ -222,21 +224,18 @@ void* proveedorFunc(void *arg) {
     }
 
     // Leer y procesar productos del archivo
-    while (bandera) {
-        sem_wait(&hayEspacio);
-
-        c = (char) fgetc(file);
-
-        // Section crítica del índice de Proveedores
+    while ((c = (char) fgetc(file)) != EOF) { // Saldrá cuando se acabe el fichero
         if (esTipoValido(c)){
+
+            sem_wait(&hayEspacio);
+
+            // Section crítica del índice de Proveedores
             sem_wait(&semContP);
             indiceProveedor = itProdBuffer;
             itProdBuffer = (itProdBuffer + 1) % tamBuffer;
             sem_post(&semContP);
-        }
 
 
-        if (c >= 'a' && c <= 'j') {
             // Escribir en el búfer
             buffer[indiceProveedor].tipo = c;
             buffer[indiceProveedor].proveedorID = proveedorID;
@@ -247,33 +246,36 @@ void* proveedorFunc(void *arg) {
             totalProductos[c - 'a']++;
             productosLeidos++;
 
-        } else if (c == EOF) { // Si es el final del fichero pone una 'F' para decir que ha acabado.
-
-            buffer[indiceProveedor].tipo = 'F';
-            buffer[indiceProveedor].proveedorID = proveedorID;
-
-            sem_post(&hayDato);
-            bandera = 0;
-
-        } else { // Procesar productos no válidos
+        } else { // NO ES TIPO VALIDO
             productosLeidos++;
         }
     }
-    fclose(file); // Cerrar el archivo
+
+    sem_wait(&semContP);
+    indiceProveedor = itProdBuffer;
+    itProdBuffer = (itProdBuffer + 1) % tamBuffer;
+    sem_post(&semContP);
+
+    // FIN DE FICHERO
+    buffer[indiceProveedor].tipo = 'F';
+    buffer[indiceProveedor].proveedorID = proveedorID;
+
+    sem_post(&hayDato);
+    fclose(file);
+
 
     // Escribir resultados en el fichero de salida
-
     // Formatear cadena
     sprintf(fichPath, "%s/%s", path, fichDest);
 
+    // Sección crítica fichero
+    sem_wait(&semaforoFichero);
     outputFile = fopen(fichDest, "a");
     if (outputFile == NULL) {
         fprintf(stderr, "Error al abrir el archivo de salida del proveedor %d.\n", 0);
         exit(-1);
     }
 
-    // Sección crítica fichero
-    sem_wait(&semaforoFichero);
     fprintf(outputFile, "Proveedor: %d.\n", proveedorID);
     fprintf(outputFile, "   Productos procesados: %d.\n", productosLeidos);
     fprintf(outputFile, "   Productos Inválidos: %d.\n", productosLeidos - productosValidos);
@@ -283,7 +285,7 @@ void* proveedorFunc(void *arg) {
         fprintf(outputFile, "     %d de tipo \"%c\".\n", totalProductos[tipo - 'a'], tipo);
     }
     sem_post(&semaforoFichero);
-    sem_post(&proveedoresAcabados);
+    sem_post(&proveedoresAcabados); ///////////////////////////////////////////////
 
     // Cerrar archivos de salida y liberar memoria
     free(fichPath);
@@ -310,15 +312,8 @@ void *consumidorFunc(void *arg) {
         }
     }
 
-    // Incializar numProdsConsumidosPorProveedor[][] No sabes lo que hay en la memoria cuando vas a escribir.
-    for (int i = 0; i < nProveedores; i++) {
-        for (int j = 0; j < 10; j++) {
-            numProdsConsumidosPorProveedor[i][j] = 0;
-        }
-    }
 
     // Consumir productos del búfer
-
     while (bandera && contProvsAcabados != nProveedores) { //contProvsAcabados != nProveedores
         sem_wait(&hayDato);
 
@@ -328,11 +323,13 @@ void *consumidorFunc(void *arg) {
         itConsBuffer = (itConsBuffer + 1) % tamBuffer; // Incrementa contador buffer
         sem_post(&semContC);
 
-        if ('a' <= producto.tipo && producto.tipo < ('a' + NPRODUCTOS)) { //Está entre 'a' y 'j'
+        if ('a' <= producto.tipo && producto.tipo <= 'j') { //Está entre 'a' y 'j'
             numProdsConsumidos++; // Incremento de contador general
             numProdsConsumidosPorProveedor[producto.proveedorID][producto.tipo - 'a']++; // Incremento de contador del tipo correspondiente
         } else if (producto.tipo == 'F'){
+            //sem_wait(&semContProbsAcabados); //////////////////////////
             contProvsAcabados++;
+            //sem_post(semContProbsAcabados); //////////////////////////
         }
 
         sem_post(&hayEspacio);
@@ -441,7 +438,7 @@ void* facturadorFunc() {
 }
 
 // Devuelve True si está entre a y j (incluidas)
-int esTipoValido(char c) { return ((c >= 'a' && c <= 'j') || c == EOF); }
+int esTipoValido(char c) { return (c >= 'a' && c <= 'j'); }
 
 int esCadena(char *cadena) {
     for (int i = 0; i < strlen(cadena); ++i) {
