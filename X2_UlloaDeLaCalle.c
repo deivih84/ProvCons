@@ -329,7 +329,7 @@ void *consumidorFunc(void *arg) {
         } else if (producto.tipo == 'F'){
             //sem_wait(&semContProbsAcabados); //////////////////////////
             contProvsAcabados++;
-            //sem_post(semContProbsAcabados); //////////////////////////
+            //sem_post(semContProbsAcabados);  //////////////////////////
         }
 
         sem_post(&hayEspacio);
