@@ -52,9 +52,10 @@ int esCadena(char *string);
 
 
 int main(int argc, char *argv[]) {
-    int argHilosP[MAX_PROVEEDORES], argHilosC[MAX_PROVEEDORES];
-    char *dirpath;
+    int idHilosP[MAX_PROVEEDORES], idHilosC[MAX_PROVEEDORES];
+    char dirpath[255];
     FILE *file;
+    pthread_t *proveedorThread, *consumidorThread, facturadorThread;
 
     // Verificación de la cantidad de argumentos
     if (argc != 6) {
@@ -68,7 +69,6 @@ int main(int argc, char *argv[]) {
     nConsumidores = (!esCadena(argv[5])) ? atoi(argv[5]) : -1;
 
 
-    pthread_t proveedorThread[nProveedores], consumidorThread[nConsumidores], facturadorThread;
 
     if (tamBuffer <= 0 || tamBuffer > 5000) {
         fprintf(stderr, "Error: T debe ser un entero positivo menor o igual a 5000.\n");
@@ -83,27 +83,18 @@ int main(int argc, char *argv[]) {
         exit(-1);
     }
 
-    dirpath = calloc(255, sizeof(char));
-    if (dirpath == NULL) {
-        free(dirpath);
-        fprintf(stderr, "Error al asignar memoria para el path de pruebas.\n");
+    proveedorThread = calloc(nProveedores, sizeof(char));
+    if (proveedorThread == NULL) {
+        fprintf(stderr, "Error al asignar memoria para los hilos proveedores.\n");
         exit(-1);
     }
-    path = calloc(255, sizeof(char));
-    if (path == NULL) {
-        free(path);
-        fprintf(stderr, "Error al asignar memoria para el path de los proveedores.\n");
-        exit(-1);
-    }
-    fichDest = calloc(255, sizeof(char));
-    if (fichDest == NULL) {
-        free(fichDest);
-        fprintf(stderr, "Error al asignar memoria para el path de fichero destino.\n");
+    consumidorThread = calloc(nConsumidores, sizeof(char));
+    if (consumidorThread == NULL) {
+        fprintf(stderr, "Error al asignar memoria para los hilos consumidores.\n");
         exit(-1);
     }
     buffer = calloc(tamBuffer, sizeof(Producto));
     if (buffer == NULL) {
-        free(buffer);
         fprintf(stderr, "Error al asignar memoria para el buffer compartido.\n");
         exit(-1);
     }
@@ -115,20 +106,18 @@ int main(int argc, char *argv[]) {
         file = fopen(dirpath, "r");
         if (file == NULL) {
             fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", i);
-            free(buffer);
             exit(-1);
         }
         fclose(file);
     }
     // Verificado correctamente
-    // Creado o limpieza del fichero de salida.
     path = argv[1];
     fichDest = argv[2];
 
+    // Creado o limpieza del fichero de salida.
     file = fopen(fichDest, "w");
     if (file == NULL) {
         fprintf(stderr, "Error al abrir el archivo salida.");
-        free(buffer);
         exit(-1);
     }
     fclose(file);
@@ -142,24 +131,18 @@ int main(int argc, char *argv[]) {
     sem_init(&proveedoresAcabados, 0, -nProveedores);
     sem_init(&semContProbsAcabados, 0, 1);
 
-    for (int i = 0; i < nProveedores; ++i) {
-        argHilosP[i] = i;
-    }
-    for (int i = 0; i < nConsumidores; ++i) {
-        argHilosC[i] = i;
-    }
 
-
-    // Crear hilos proveedor
-    for (int i = 0; i < nProveedores; i++) {
-        // Configurar los argumentos para el hilo actual
-        pthread_create(&proveedorThread[i], NULL, (void *) proveedorFunc, &argHilosP[i]);
+    // Lanzar hilos proveedores
+    for (int i = 0; i < nProveedores; i++) { // Configurar los argumentos para el hilo actual
+        idHilosP[i] = i;
+        pthread_create(&proveedorThread[i], NULL, (void *) proveedorFunc, &idHilosP[i]);
         //       printf("Hilo Proveedor %d lanzado.\n", i);
     }
 
-    // Crear hilos consumidor
+    // Lanzar hilos consumidores
     for (int j = 0; j < nConsumidores; j++) {
-        pthread_create(&consumidorThread[j], NULL, (void *) consumidorFunc, &argHilosC[j]);
+        idHilosC[j] = j;
+        pthread_create(&consumidorThread[j], NULL, (void *) consumidorFunc, &idHilosC[j]);
         //printf("Hilo Consumidor %d lanzado.\n", j);
     }
 
@@ -186,30 +169,22 @@ int main(int argc, char *argv[]) {
     sem_destroy(&proveedoresAcabados);
     sem_destroy(&semContProbsAcabados);
 
-    free(dirpath);
     free(buffer);
 }
 
 void* proveedorFunc(void *arg) {
     FILE *file, *outputFile;
-    int bandera = 1;
     int productosLeidos = 0, productosValidos = 0, proveedorID = *((int*) arg), indiceProveedor;
     int *totalProductos;
+    char c, fichPath[255];
 
-    char c, *fichPath = calloc(255, sizeof(char));
-    if (fichPath == NULL) {
-        fprintf(stderr, "Error al asignar memoria para fichPath.\n");
-        free(fichPath);
-        exit(-1);
-    }
     totalProductos = calloc(NPRODUCTOS, sizeof(Producto));
-    if (totalProductos == NULL) {
+    if (totalProductos == NULL) { // No haría falta la mem.Dinámica pues NPRODUCTOS se conoce en compilación
         fprintf(stderr, "Error al asignar memoria para el array totalProductos.\n");
-        free(totalProductos);
         exit(-1);
     }
 
-    // Inicializar totalProductos (Por si acaso)
+    // Todo (Quitar) Inicializar totalProductos
     for (int i = 0; i < NPRODUCTOS; ++i) {
         totalProductos[i] = 0;
     }
@@ -224,7 +199,7 @@ void* proveedorFunc(void *arg) {
     }
 
     // Leer y procesar productos del archivo
-    while ((c = (char) fgetc(file)) != EOF) { // Saldrá cuando se acabe el fichero
+    while ((c = fgetc(file)) != EOF) { // Saldrá cuando se acabe el fichero
         if (esTipoValido(c)){
 
             sem_wait(&hayEspacio);
@@ -251,6 +226,8 @@ void* proveedorFunc(void *arg) {
         }
     }
 
+    fclose(file);
+
     sem_wait(&semContP);
     indiceProveedor = itProdBuffer;
     itProdBuffer = (itProdBuffer + 1) % tamBuffer;
@@ -261,7 +238,6 @@ void* proveedorFunc(void *arg) {
     buffer[indiceProveedor].proveedorID = proveedorID;
 
     sem_post(&hayDato);
-    fclose(file);
 
 
     // Escribir resultados en el fichero de salida
@@ -288,7 +264,6 @@ void* proveedorFunc(void *arg) {
     sem_post(&proveedoresAcabados); ///////////////////////////////////////////////
 
     // Cerrar archivos de salida y liberar memoria
-    free(fichPath);
     free(totalProductos);
     fclose(outputFile);
     pthread_exit(NULL);
@@ -298,6 +273,7 @@ void *consumidorFunc(void *arg) {
     int bandera = 1;
     int numProdsConsumidos = 0, consumidorID = *((int*) arg);
     Producto producto;
+
 
     int** numProdsConsumidosPorProveedor = (int**) calloc(nProveedores, sizeof(int*));
     if (numProdsConsumidosPorProveedor == NULL) {
@@ -314,27 +290,28 @@ void *consumidorFunc(void *arg) {
 
 
     // Consumir productos del búfer
-    while (bandera && contProvsAcabados != nProveedores) { //contProvsAcabados != nProveedores
+    while (bandera) { //contProvsAcabados != nProveedores
         sem_wait(&hayDato);
+        printf(" %d ", bandera); // TODO
 
         // Sección crítica
         sem_wait(&semContC);
         producto = buffer[itConsBuffer];
-        itConsBuffer = (itConsBuffer + 1) % tamBuffer; // Incrementa contador buffer
-        sem_post(&semContC);
+        if (producto.tipo  == 'F') { // Si es F les digo al resto de consumidores que hay dato y no modifico el contador para que también lean la F
+            sem_post(&semContC);
+            sem_wait(&hayDato);
+            bandera = 0;
+        }
+        else {
+            itConsBuffer = (itConsBuffer + 1) % tamBuffer; // Incrementa contador buffer
+            sem_post(&semContC);
 
-        if ('a' <= producto.tipo && producto.tipo <= 'j') { //Está entre 'a' y 'j'
             numProdsConsumidos++; // Incremento de contador general
             numProdsConsumidosPorProveedor[producto.proveedorID][producto.tipo - 'a']++; // Incremento de contador del tipo correspondiente
-        } else if (producto.tipo == 'F'){
             //sem_wait(&semContProbsAcabados); //////////////////////////
             contProvsAcabados++;
             //sem_post(semContProbsAcabados);  //////////////////////////
-        }
-
-        sem_post(&hayEspacio);
-        if (contProvsAcabados == nProveedores) {
-            bandera = 0;
+            sem_post(&hayEspacio);
         }
     }
 
@@ -352,19 +329,16 @@ void* facturadorFunc() {
     proveedores = calloc(nProveedores, sizeof(int));
     if (proveedores == NULL) {
         fprintf(stderr, "Error al asignar memoria para el array de proveedores.\n");
-        free(proveedores);
         exit(-1);
     }
     consumidores = calloc(nConsumidores, sizeof(int));
     if (consumidores == NULL) {
         fprintf(stderr, "Error al asignar memoria para el array de consumidores.\n");
-        free(consumidores);
         exit(-1);
     }
     fichPath = calloc(255, sizeof(char));
     if (fichPath == NULL) {
         fprintf(stderr, "Error al asignar memoria para fichPath.\n");
-        free(fichPath);
         exit(-1);
     }
 

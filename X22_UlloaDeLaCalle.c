@@ -1,4 +1,4 @@
-//
+///
 // Autores Ivan Ulloa Gómez 12343449Q y David de la Calle Azahares 71231179H del grupo de prácticas L2
 //
 
@@ -10,8 +10,7 @@
 #include <semaphore.h>
 
 #define MAX_COMMAND_LENGTH 800
-#define MAX_ARGUMENTS 5
-#define MAX_PROVEEDORES 7
+#define MAX_ARGUMENTS 4
 #define MAX_CONSUMIDORES 1000
 #define NPRODUCTOS ('j' - 'a' + 1)
 
@@ -32,7 +31,7 @@ typedef struct nodo {
 sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, proveedoresAcabados, semContProbsAcabados;
 Producto *buffer;
 char *path, *fichDest;
-int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0, tamBuffer, nProveedores, nConsumidores;
+int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0, tamBuffer, nProveedores = 1, nConsumidores;
 ConsumidorInfo *nodoPrincipal = NULL, *nodoActual = NULL;
 
 // Declaración de funciones
@@ -52,30 +51,26 @@ int esCadena(char *string);
 
 
 int main(int argc, char *argv[]) {
-    int idHilosP[MAX_PROVEEDORES], idHilosC[MAX_PROVEEDORES];
+    int idHilosP = 1, idHilosC[MAX_CONSUMIDORES];
     char dirpath[255];
     FILE *file;
     pthread_t *proveedorThread, *consumidorThread, facturadorThread;
 
     // Verificación de la cantidad de argumentos
-    if (argc != 6) {
+    if (argc != 5) {
         fprintf(stderr, "Error: Número incorrecto de argumentos.\n");
         return -1;
     }
 
     // Verificar si los parámetros pasados son válidos o no. Si no, se pasa -1 para salir en el próximo if
-    tamBuffer = (!esCadena(argv[3])) ? atoi(argv[3]) : -1;
-    nProveedores = (!esCadena(argv[4])) ? atoi(argv[4]) : -1;
-    nConsumidores = (!esCadena(argv[5])) ? atoi(argv[5]) : -1;
+    tamBuffer = (!esCadena(argv[2])) ? atoi(argv[3]) : -1;
+    nProveedores = (!esCadena(argv[3])) ? atoi(argv[4]) : -1;
+    nConsumidores = (!esCadena(argv[4])) ? atoi(argv[5]) : -1;
 
 
 
     if (tamBuffer <= 0 || tamBuffer > 5000) {
         fprintf(stderr, "Error: T debe ser un entero positivo menor o igual a 5000.\n");
-        exit(-1);
-    }
-    if (nProveedores <= 0 || nProveedores > MAX_PROVEEDORES) {
-        fprintf(stderr, "Error: P debe ser un entero positivo menor o igual a %d.\n", MAX_PROVEEDORES);
         exit(-1);
     }
     if (nConsumidores <= 0 || nConsumidores > MAX_CONSUMIDORES) {
@@ -110,10 +105,12 @@ int main(int argc, char *argv[]) {
         }
         fclose(file);
     }
+  // UTILIZAR SOLO ARGV
     // Verificado correctamente
     path = argv[1];
     fichDest = argv[2];
 
+    // ABRIRLO AQUI SOLO Y NO ABRIRLO EN CADA PTHREAD, CAMBIA PARA SOLO HACERLO EN EL MAIN
     // Creado o limpieza del fichero de salida.
     file = fopen(fichDest, "w");
     if (file == NULL) {
@@ -133,11 +130,8 @@ int main(int argc, char *argv[]) {
 
 
     // Lanzar hilos proveedores
-    for (int i = 0; i < nProveedores; i++) { // Configurar los argumentos para el hilo actual
-        idHilosP[i] = i;
-        pthread_create(&proveedorThread[i], NULL, (void *) proveedorFunc, &idHilosP[i]);
+    pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, (void *)argv);
         //       printf("Hilo Proveedor %d lanzado.\n", i);
-    }
 
     // Lanzar hilos consumidores
     for (int j = 0; j < nConsumidores; j++) {
@@ -150,9 +144,7 @@ int main(int argc, char *argv[]) {
     pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, NULL); // No se le pasa nada a facturador
 
     // Esperar a que los hilos terminen
-    for (int i = 0; i < nProveedores; i++) {
-        pthread_join(proveedorThread[i], NULL);
-    }
+    pthread_join(*proveedorThread, NULL);
     for (int i = 0; i < nConsumidores; i++) {
         pthread_join(consumidorThread[i], NULL);
     }
@@ -308,9 +300,10 @@ void *consumidorFunc(void *arg) {
 
             numProdsConsumidos++; // Incremento de contador general
             numProdsConsumidosPorProveedor[producto.proveedorID][producto.tipo - 'a']++; // Incremento de contador del tipo correspondiente
-            //sem_wait(&semContProbsAcabados); //////////////////////////
+          // SI SE NECESITA UN SEMAFORO PARA EL NUMERO DE ACABADO
+            sem_wait(&semContProbsAcabados); //////////////////////////
             contProvsAcabados++;
-            //sem_post(semContProbsAcabados);  //////////////////////////
+            sem_post(&semContProbsAcabados);  //////////////////////////
             sem_post(&hayEspacio);
         }
     }
