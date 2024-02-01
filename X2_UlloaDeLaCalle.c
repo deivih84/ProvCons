@@ -28,7 +28,7 @@ typedef struct nodo {
 } ConsumidorInfo;
 
 // Variables GLOBALES :)
-sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, proveedoresAcabados;
+sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, proveedorAcabado;
 Producto *buffer;
 char *path;
 int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0, tamBuffer, nProveedores = 1, nConsumidores;
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
     sem_init(&semContC, 0, 1); // Semáforo para el contador de consumidores
     sem_init(&hayDato, 0, 0);
     sem_init(&adelanteFacturador, 0, 0);
-    sem_init(&proveedoresAcabados, 0, -nProveedores);
+    sem_init(&proveedorAcabado, 0, -nProveedores);
 
 
 
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
     sem_destroy(&hayEspacio);
     sem_destroy(&hayDato);
     sem_destroy(&adelanteFacturador);
-    sem_destroy(&proveedoresAcabados);
+    sem_destroy(&proveedorAcabado);
 
     free(buffer);
 }
@@ -177,7 +177,6 @@ void* proveedorFunc(void *arg) {
     // Leer y procesar productos del archivo
 
     while ((c = fgetc(fichProveedor)) != EOF) { // Saldrá cuando se acabe el fichero
-        printf("%c", c);
         if (esTipoValido(c)){
 
             sem_wait(&hayEspacio);
@@ -239,7 +238,7 @@ void* proveedorFunc(void *arg) {
     }
     fclose(fichDestino);
     sem_post(&semaforoFichero);
-    sem_post(&proveedoresAcabados); ///////////////////////////////////////////////
+    sem_post(&proveedorAcabado); ///////////////////////////////////////////////
 
     // Cerrar archivos de salida y liberar memoria
     free(totalProductos);
@@ -287,7 +286,6 @@ void *consumidorFunc(void *arg) {
 
             sem_post(&hayEspacio);
         }
-        printf(" %d ", bandera); // TODO
     }
 
     nodoActual = agregarConsumidor(nodoActual, numProdsConsumidos, numProdsConsumidosPorProveedor, consumidorID); //hay que pasarle prodConsPorTipo
@@ -318,7 +316,7 @@ void* facturadorFunc(void *arg) {
     }
 
 
-    sem_wait(&proveedoresAcabados);
+    sem_wait(&proveedorAcabado);
     // Procesar
     for (int i = 0; i < nConsumidores; i++) {
         sem_wait(&adelanteFacturador);

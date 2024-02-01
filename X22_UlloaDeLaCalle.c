@@ -28,7 +28,7 @@ typedef struct nodo {
 } ConsumidorInfo;
 
 // Variables GLOBALES :)
-sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, proveedoresAcabados;
+sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, proveedorAcabado, semLista;
 Producto *buffer;
 char *path;
 int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0, tamBuffer, nProveedores = 1, nConsumidores;
@@ -68,8 +68,6 @@ int main(int argc, char *argv[]) {
     tamBuffer = (!esCadena(argv[3])) ? atoi(argv[3]) : -1;
     nConsumidores = (!esCadena(argv[4])) ? atoi(argv[4]) : -1;
 
-    argsPthread[0] = argv[1];
-    argsPthread[1] = argv[2];
 
 
     if (tamBuffer <= 0 || tamBuffer > 5000) {
@@ -97,26 +95,29 @@ int main(int argc, char *argv[]) {
     sem_init(&semContC, 0, 1); // Semáforo para el contador de consumidores
     sem_init(&hayDato, 0, 0);
     sem_init(&adelanteFacturador, 0, 0);
-    sem_init(&proveedoresAcabados, 0, -nProveedores);
+    sem_init(&proveedorAcabado, 0, 0);
+    sem_init(&semLista, 0, 1);
 
 
 
     // APERTURA DE FICHEROS
     sprintf(pathProv, "%s/proveedor%d.dat", argv[1], 0);
-
-//    if ((fichProveedor = fopen(pathProv, "r")) == NULL) {
-//        fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", 0);
-//        exit(-1);
-//    } else { argsPthread[2] = fichProveedor; }
-//    fclose(fichProveedor);
-
+    argsPthread[0] = pathProv;
+    if ((fichProveedor = fopen(pathProv, "r")) == NULL) {
+        fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", 0);
+        exit(-1);
+    }
+    argsPthread[2] = fichProveedor;
+    fclose(fichProveedor);
 
     sprintf(pathDest, "%s/%s", argv[1], argv[2]);
-//    if ((fichDestino = fopen(pathDest, "w")) == NULL) {
-//        fprintf(stderr, "Error al abrir el archivo salida.");
-//        exit(-1);
-//    } else { argsPthread[3] = fichDestino; }
-//    fclose(fichDestino);
+    argsPthread[1] = pathDest;
+    if ((fichDestino = fopen(pathDest, "w")) == NULL) {
+        fprintf(stderr, "Error al abrir el archivo salida.");
+        exit(-1);
+    }
+    argsPthread[3] = fichDestino;
+    fclose(fichDestino);
 
 
 
@@ -131,17 +132,13 @@ int main(int argc, char *argv[]) {
     // Lanzar hilo del facturadorFunc
     pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, (void *)argsPthread);
 
+
     // Esperar a que los hilos terminen
     pthread_join(proveedorThread, NULL); // Proveedor
     for (int i = 0; i < nConsumidores; i++) { // Consumidor
         pthread_join(consumidorThread[i], NULL);
     }
     pthread_join(facturadorThread, NULL); // Facturador
-
-
-    // CERRADO DE FICHEROS
-//    fclose(fichProveedor);
-//    fclose(fichDestino);
 
 
     // Destruir semáforos y liberar memoria
@@ -151,7 +148,8 @@ int main(int argc, char *argv[]) {
     sem_destroy(&hayEspacio);
     sem_destroy(&hayDato);
     sem_destroy(&adelanteFacturador);
-    sem_destroy(&proveedoresAcabados);
+    sem_destroy(&proveedorAcabado);
+    sem_destroy(&semLista);
 
     free(buffer);
 }
@@ -159,9 +157,12 @@ int main(int argc, char *argv[]) {
 void* proveedorFunc(void *arg) {
     int productosLeidos = 0, productosValidos = 0, proveedorID = 0, indiceProveedor;
     int *totalProductos;
-    char c, fichPath[255];
-    FILE *fichProv = ((FILE **)arg)[2];
-    FILE *fichDest = ((FILE **)arg)[3];
+    char c, *fichProv = ((char **)arg)[0],
+            *fichDest = ((char **)arg)[1];
+//    printf(" %s ", fichDest);
+    FILE *fichProveedor, *fichDestino;
+//    FILE *fichProv = ((FILE **)arg)[2];
+//    FILE *fichDest = ((FILE **)arg)[3];
 
     totalProductos = calloc(NPRODUCTOS, sizeof(Producto));
     if (totalProductos == NULL) { // No haría falta la mem.Dinámica pues NPRODUCTOS se conoce en compilación
@@ -170,10 +171,14 @@ void* proveedorFunc(void *arg) {
     }
 
 
+    // APERTURA FICHERO
+    if ((fichProveedor = fopen(fichProv, "r")) == NULL) {
+        fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", 0);
+        exit(-1);
+    }
     // Leer y procesar productos del archivo
-    printf("Hola");
-    while ((c = fgetc(fichProv)) != EOF) { // Saldrá cuando se acabe el fichero
-        printf("%c", c);
+
+    while ((c = fgetc(fichProveedor)) != EOF) { // Saldrá cuando se acabe el fichero
         if (esTipoValido(c)){
 
             sem_wait(&hayEspacio);
@@ -200,7 +205,7 @@ void* proveedorFunc(void *arg) {
         }
     }
 
-    fclose(fichProv);
+    fclose(fichProveedor);
 
     sem_wait(&semContP);
     indiceProveedor = itProdBuffer;
@@ -220,20 +225,25 @@ void* proveedorFunc(void *arg) {
     // Sección crítica fichero
     sem_wait(&semaforoFichero);
 
-    fprintf(fichDest, "Proveedor: %d.\n", proveedorID);
-    fprintf(fichDest, "   Productos procesados: %d.\n", productosLeidos);
-    fprintf(fichDest, "   Productos Inválidos: %d.\n", productosLeidos - productosValidos);
-    fprintf(fichDest, "   Productos Válidos: %d. De los cuales se han insertado:\n", productosValidos);
+    if ((fichDestino = fopen(fichDest, "a")) == NULL) {
+        fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", 0);
+        exit(-1);
+    }
+
+    fprintf(fichDestino, "Proveedor: %d.\n", proveedorID);
+    fprintf(fichDestino, "   Productos procesados: %d.\n", productosLeidos);
+    fprintf(fichDestino, "   Productos Inválidos: %d.\n", productosLeidos - productosValidos);
+    fprintf(fichDestino, "   Productos Válidos: %d. De los cuales se han insertado:\n", productosValidos);
 
     for (char tipo = 'a'; tipo <= 'j'; tipo++) {
-        fprintf(fichDest, "     %d de tipo \"%c\".\n", totalProductos[tipo - 'a'], tipo);
+        fprintf(fichDestino, "     %d de tipo \"%c\".\n", totalProductos[tipo - 'a'], tipo);
     }
+    fclose(fichDestino);
     sem_post(&semaforoFichero);
-    sem_post(&proveedoresAcabados); ///////////////////////////////////////////////
+    sem_post(&proveedorAcabado); ///////////////////////////////////////////////
 
     // Cerrar archivos de salida y liberar memoria
     free(totalProductos);
-//    fclose(fichDest);
     pthread_exit(NULL);
 }
 
@@ -278,19 +288,19 @@ void *consumidorFunc(void *arg) {
 
             sem_post(&hayEspacio);
         }
-        printf(" %d ", bandera); // TODO
     }
-
+    sem_wait(&semLista);
     nodoActual = agregarConsumidor(nodoActual, numProdsConsumidos, numProdsConsumidosPorProveedor, consumidorID); //hay que pasarle prodConsPorTipo
+    sem_post(&semLista);
 
     sem_post(&adelanteFacturador);
     pthread_exit(NULL);
 }
 
 void* facturadorFunc(void *arg) {
-    FILE *outputFile = NULL;
     int tipos[10], *proveedores, *consumidores, suma = 0, maximo = 0, cons = 0;
-    FILE *fichDest = ((FILE **)arg)[3];
+    FILE *fichDestino;
+    char *fichDest = ((char **)arg)[1];
 
     proveedores = calloc(nProveedores, sizeof(int));
     if (proveedores == NULL) {
@@ -308,7 +318,7 @@ void* facturadorFunc(void *arg) {
     }
 
 
-    sem_wait(&proveedoresAcabados);
+    sem_wait(&proveedorAcabado);
     // Procesar
     for (int i = 0; i < nConsumidores; i++) {
         sem_wait(&adelanteFacturador);
@@ -329,11 +339,20 @@ void* facturadorFunc(void *arg) {
         }
         consumidores[i] = nodoActual->productosConsumidos; // Para sacar el que más ha consumido más tarde
 
-        fprintf(fichDest, "\nCliente consumidor: %d\n", nodoActual->consumidorID);
-        fprintf(fichDest, "  Productos consumidos: %d. De los cuales:\n", nodoActual->productosConsumidos);
+
+
+        sem_wait(&semaforoFichero);
+        if ((fichDestino = fopen(fichDest, "a")) == NULL) {
+            fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", 0);
+            exit(-1);
+        }
+
+
+        fprintf(fichDestino, "\nCliente consumidor: %d\n", nodoActual->consumidorID);
+        fprintf(fichDestino, "  Productos consumidos: %d. De los cuales:\n", nodoActual->productosConsumidos);
 
         for (int tipo = 0; tipo < (NPRODUCTOS); ++tipo) {
-            fprintf(fichDest, "     Producto tipo \"%c\": %d\n", (char) (tipo + 'a'), tipos[tipo]);
+            fprintf(fichDestino, "     Producto tipo \"%c\": %d\n", (char) (tipo + 'a'), tipos[tipo]);
         }
         nodoActual = nodoActual->siguiente;
     }
@@ -348,11 +367,14 @@ void* facturadorFunc(void *arg) {
             cons = j;
         }
     }
-    fprintf(fichDest, "\nTotal de productos consumidos: %d\n", suma);
+    fprintf(fichDestino, "\nTotal de productos consumidos: %d\n", suma);
     for (int j = 0; j < nProveedores; ++j) {
-        fprintf(fichDest, "     %d del proveedor %d.\n", proveedores[j], j);
+        fprintf(fichDestino, "     %d del proveedor %d.\n", proveedores[j], j);
     }
-    fprintf(fichDest, "Cliente consumidor que mas ha consumido: %d\n", cons);
+    fprintf(fichDestino, "Cliente consumidor que mas ha consumido: %d\n", cons);
+
+    fclose(fichDestino);
+    sem_post(&semaforoFichero);
 
     liberarLista(nodoPrincipal);
     free(proveedores);
