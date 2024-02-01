@@ -26,6 +26,13 @@ typedef struct nodo {
     int **productosConsumidosPorTipo;
     struct nodo *siguiente;
 } ConsumidorInfo;
+typedef struct argsProv {
+    int proveedorID;
+    int buffTam;
+    char *path;
+    int **productosConsumidosPorTipo; //TODO esto debe de ser dos arrays, uno para los proveedoes y otro para los productos
+    FILE *fi; // EL FICHERO ABIERTO.
+} ArgsProv; // TODO hacer otro para el consumidor, parecido :)
 
 // Variables GLOBALES :)
 sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, proveedorAcabado, semLista;
@@ -78,13 +85,11 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error: C debe ser un entero positivo menor o igual a %d.\n", MAX_CONSUMIDORES);
         exit(-1);
     }
-    consumidorThread = calloc(nConsumidores, sizeof(char));
-    if (consumidorThread == NULL) {
+    if ((consumidorThread = calloc(nConsumidores, sizeof(char))) == NULL) {
         fprintf(stderr, "Error al asignar memoria para los hilos consumidores.\n");
         exit(-1);
     }
-    buffer = calloc(tamBuffer, sizeof(Producto));
-    if (buffer == NULL) {
+    if ((buffer = calloc(tamBuffer, sizeof(Producto))) == NULL) {
         fprintf(stderr, "Error al asignar memoria para el buffer compartido.\n");
         exit(-1);
     }
