@@ -200,6 +200,30 @@ listasEnlazadas.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/listasEnlazadas.c.s
 .PHONY : listasEnlazadas.c.s
 
+prueba.obj: prueba.c.obj
+.PHONY : prueba.obj
+
+# target to build an object file
+prueba.c.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/prueba.c.obj
+.PHONY : prueba.c.obj
+
+prueba.i: prueba.c.i
+.PHONY : prueba.i
+
+# target to preprocess a source file
+prueba.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/prueba.c.i
+.PHONY : prueba.c.i
+
+prueba.s: prueba.c.s
+.PHONY : prueba.s
+
+# target to generate assembly for a file
+prueba.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\untitled.dir\build.make CMakeFiles/untitled.dir/prueba.c.s
+.PHONY : prueba.c.s
+
 shell.obj: shell.c.obj
 .PHONY : shell.obj
 
@@ -242,6 +266,9 @@ help:
 	@echo ... listasEnlazadas.obj
 	@echo ... listasEnlazadas.i
 	@echo ... listasEnlazadas.s
+	@echo ... prueba.obj
+	@echo ... prueba.i
+	@echo ... prueba.s
 	@echo ... shell.obj
 	@echo ... shell.i
 	@echo ... shell.s

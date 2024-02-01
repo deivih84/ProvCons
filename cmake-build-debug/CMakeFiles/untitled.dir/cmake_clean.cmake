@@ -5,6 +5,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/untitled.dir/copia.c.obj.d"
   "CMakeFiles/untitled.dir/listasEnlazadas.c.obj"
   "CMakeFiles/untitled.dir/listasEnlazadas.c.obj.d"
+  "CMakeFiles/untitled.dir/prueba.c.obj"
+  "CMakeFiles/untitled.dir/prueba.c.obj.d"
   "CMakeFiles/untitled.dir/shell.c.obj"
   "CMakeFiles/untitled.dir/shell.c.obj.d"
   "libuntitled.dll.a"

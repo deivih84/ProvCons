@@ -1,14 +1,44 @@
 Proveedor: 0.
-   Productos procesados: 15.
-   Productos Inválidos: 5.
-   Productos Válidos: 10. De los cuales se han insertado:
-     5 de tipo "a".
+   Productos procesados: 24.
+   Productos Inválidos: 8.
+   Productos Válidos: 16. De los cuales se han insertado:
+     8 de tipo "a".
      0 de tipo "b".
      0 de tipo "c".
-     5 de tipo "d".
+     8 de tipo "d".
      0 de tipo "e".
      0 de tipo "f".
      0 de tipo "g".
      0 de tipo "h".
      0 de tipo "i".
      0 de tipo "j".
+
+Cliente consumidor: 1
+  Productos consumidos: 15. De los cuales:
+     Producto tipo "a": 7
+     Producto tipo "b": 0
+     Producto tipo "c": 0
+     Producto tipo "d": 8
+     Producto tipo "e": 0
+     Producto tipo "f": 0
+     Producto tipo "g": 0
+     Producto tipo "h": 0
+     Producto tipo "i": 0
+     Producto tipo "j": 0
+
+Cliente consumidor: 0
+  Productos consumidos: 1. De los cuales:
+     Producto tipo "a": 1
+     Producto tipo "b": 0
+     Producto tipo "c": 0
+     Producto tipo "d": 0
+     Producto tipo "e": 0
+     Producto tipo "f": 0
+     Producto tipo "g": 0
+     Producto tipo "h": 0
+     Producto tipo "i": 0
+     Producto tipo "j": 0
+
+Total de productos consumidos: 16
+     16 del proveedor 0.
+Cliente consumidor que mas ha consumido: 0
