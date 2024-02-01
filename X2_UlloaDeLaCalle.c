@@ -28,7 +28,7 @@ typedef struct nodo {
 } ConsumidorInfo;
 
 // Variables GLOBALES :)
-sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, proveedorAcabado;
+sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, proveedorAcabado, semLista;
 Producto *buffer;
 char *path;
 int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0, tamBuffer, nProveedores = 1, nConsumidores;
@@ -96,6 +96,7 @@ int main(int argc, char *argv[]) {
     sem_init(&hayDato, 0, 0);
     sem_init(&adelanteFacturador, 0, 0);
     sem_init(&proveedorAcabado, 0, -nProveedores);
+    sem_init(&semLista, 0, 1);
 
 
 
@@ -148,6 +149,7 @@ int main(int argc, char *argv[]) {
     sem_destroy(&hayDato);
     sem_destroy(&adelanteFacturador);
     sem_destroy(&proveedorAcabado);
+    sem_destroy(&semLista);
 
     free(buffer);
 }
@@ -287,8 +289,9 @@ void *consumidorFunc(void *arg) {
             sem_post(&hayEspacio);
         }
     }
-
+    sem_wait(&semLista);
     nodoActual = agregarConsumidor(nodoActual, numProdsConsumidos, numProdsConsumidosPorProveedor, consumidorID); //hay que pasarle prodConsPorTipo
+    sem_post(&semLista);
 
     sem_post(&adelanteFacturador);
     pthread_exit(NULL);
