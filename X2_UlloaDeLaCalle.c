@@ -11,6 +11,7 @@
 
 #define MAX_COMMAND_LENGTH 800
 #define MAX_ARGUMENTS 4
+#define MAX_PROVEEDORES 7
 #define MAX_CONSUMIDORES 1000
 #define NPRODUCTOS ('j' - 'a' + 1)
 
@@ -23,21 +24,30 @@ typedef struct {
 typedef struct nodo {
     int consumidorID;
     int productosConsumidos;
-    int **productosConsumidosPorTipo;
+    int *productosConsumidosPorTipo;
+    int *totalPorProveedor;
     struct nodo *siguiente;
 } ConsumidorInfo;
-typedef struct argsProv {
+
+
+typedef struct argsProvFact {
     int proveedorID;
     int buffTam;
-    char *path;
-    int **productosConsumidosPorTipo; //TODO esto debe de ser dos arrays, uno para los proveedoes y otro para los productos
-    FILE *fi; // EL FICHERO ABIERTO.
-} ArgsProv; // TODO hacer otro para el consumidor, parecido :)
+    int nProveedores;
+    int nConsumidores;
+    char *pathProv;
+    FILE *file; // EL FICHERO ABIERTO.
+} ArgsProvFact;
+typedef struct argsCons {
+    int consumidorID;
+    int buffTam;
+    int nProveedores;
+    int nConsumidores;
+} ArgsCons;
 
 // Variables GLOBALES :)
-sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, proveedorAcabado, semLista;
+sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, semProveedorAcabado, semLista;
 Producto *buffer;
-char *path;
 int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0, tamBuffer, nProveedores = 1, nConsumidores;
 ConsumidorInfo *nodoPrincipal = NULL, *nodoActual = NULL;
 
@@ -58,11 +68,13 @@ int esCadena(char *cadena);
 
 
 int main(int argc, char *argv[]) {
+    int idHilosP[MAX_PROVEEDORES];
     int idHilosC[MAX_CONSUMIDORES];
     char pathProv[255], pathDest[255];
     FILE *fichProveedor, *fichDestino;
     pthread_t proveedorThread, *consumidorThread, facturadorThread;
-    void *argsPthread[2];
+    ArgsProvFact *argsProv;
+    ArgsCons *argsCons;
 
     // Verificación de la cantidad de argumentos
     if (argc != 5) {
@@ -74,6 +86,11 @@ int main(int argc, char *argv[]) {
     // Verificar si los parámetros pasados son válidos o no. Si no, se pasa -1 para salir en el próximo if
     tamBuffer = (!esCadena(argv[3])) ? atoi(argv[3]) : -1;
     nConsumidores = (!esCadena(argv[4])) ? atoi(argv[4]) : -1;
+
+
+    argsProv->buffTam = argsCons->buffTam = tamBuffer;
+    contProvsAcabados = argsProv->nProveedores = argsCons->nProveedores = nProveedores;
+    argsProv->nConsumidores = argsCons->nConsumidores = nConsumidores;
 
 
 
@@ -100,42 +117,42 @@ int main(int argc, char *argv[]) {
     sem_init(&semContC, 0, 1); // Semáforo para el contador de consumidores
     sem_init(&hayDato, 0, 0);
     sem_init(&adelanteFacturador, 0, 0);
-    sem_init(&proveedorAcabado, 0, -nProveedores);
+    sem_init(&semProveedorAcabado, 0, -nProveedores);
     sem_init(&semLista, 0, 1);
 
 
 
     // APERTURA DE FICHEROS
     sprintf(pathProv, "%s/proveedor%d.dat", argv[1], 0);
-    argsPthread[0] = pathProv;
+    argsProv->pathProv = pathProv;
     if ((fichProveedor = fopen(pathProv, "r")) == NULL) {
         fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", 0);
         exit(-1);
     }
-    argsPthread[2] = fichProveedor;
     fclose(fichProveedor);
 
     sprintf(pathDest, "%s/%s", argv[1], argv[2]);
-    argsPthread[1] = pathDest;
     if ((fichDestino = fopen(pathDest, "w")) == NULL) {
         fprintf(stderr, "Error al abrir el archivo salida.");
         exit(-1);
     }
-    argsPthread[3] = fichDestino;
-    fclose(fichDestino);
+    argsProv->file = fichDestino;
 
 
 
     // LANZAMIENTO DE HILOS
     // Lanzar hilo proveedor
-    pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, (void *)argsPthread);
+    for (int i = 0; i < nProveedores; ++i) {
+        argsProv->proveedorID = i;
+        pthread_create(&proveedorThread, NULL, (void *) proveedorFunc, (void *)argsProv);
+    }
     // Lanzar hilos consumidores
     for (int i = 0; i < nConsumidores; i++) {
-        idHilosC[i] = i;
-        pthread_create(&consumidorThread[i], NULL, (void *) consumidorFunc, &idHilosC[i]);
+        argsCons->consumidorID = i;
+        pthread_create(&consumidorThread[i], NULL, (void *) consumidorFunc, (void *)argsCons);
     }
     // Lanzar hilo del facturadorFunc
-    pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, (void *)argsPthread);
+    pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, (void *)argsProv);
 
 
     // Esperar a que los hilos terminen
@@ -153,7 +170,7 @@ int main(int argc, char *argv[]) {
     sem_destroy(&hayEspacio);
     sem_destroy(&hayDato);
     sem_destroy(&adelanteFacturador);
-    sem_destroy(&proveedorAcabado);
+    sem_destroy(&semProveedorAcabado);
     sem_destroy(&semLista);
 
     free(buffer);
@@ -166,8 +183,7 @@ void* proveedorFunc(void *arg) {
     *fichDest = ((char **)arg)[1];
     printf(" %s ", fichDest);
     FILE *fichProveedor, *fichDestino;
-//    FILE *fichProv = ((FILE **)arg)[2];
-//    FILE *fichDest = ((FILE **)arg)[3];
+    ArgsProvFact *args = (ArgsProvFact *) arg;
 
     totalProductos = calloc(NPRODUCTOS, sizeof(Producto));
     if (totalProductos == NULL) { // No haría falta la mem.Dinámica pues NPRODUCTOS se conoce en compilación
@@ -210,14 +226,13 @@ void* proveedorFunc(void *arg) {
         }
     }
 
-    fclose(fichProveedor);
-
     sem_wait(&semContP);
     indiceProveedor = itProdBuffer;
     itProdBuffer = (itProdBuffer + 1) % tamBuffer;
     sem_post(&semContP);
 
     // FIN DE FICHERO
+    // semaforo Contador provs acabados
     buffer[indiceProveedor].tipo = 'F';
     buffer[indiceProveedor].proveedorID = proveedorID;
 
@@ -245,7 +260,7 @@ void* proveedorFunc(void *arg) {
     }
     fclose(fichDestino);
     sem_post(&semaforoFichero);
-    sem_post(&proveedorAcabado); ///////////////////////////////////////////////
+    sem_post(&semProveedorAcabado); ///////////////////////////////////////////////
 
     // Cerrar archivos de salida y liberar memoria
     free(totalProductos);
@@ -324,7 +339,7 @@ void* facturadorFunc(void *arg) {
     }
 
 
-    sem_wait(&proveedorAcabado);
+    sem_wait(&semProveedorAcabado);
     // Procesar
     for (int i = 0; i < nConsumidores; i++) {
         sem_wait(&adelanteFacturador);

@@ -28,7 +28,7 @@ typedef struct nodo {
 } ConsumidorInfo;
 
 // Variables GLOBALES :)
-sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, proveedorAcabado, semLista;
+sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, semProveedorAcabado, semLista;
 Producto *buffer;
 char *path;
 int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0, tamBuffer, nProveedores = 1, nConsumidores;
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
     sem_init(&semContC, 0, 1); // Semáforo para el contador de consumidores
     sem_init(&hayDato, 0, 0);
     sem_init(&adelanteFacturador, 0, 0);
-    sem_init(&proveedorAcabado, 0, 0);
+    sem_init(&semProveedorAcabado, 0, 0);
     sem_init(&semLista, 0, 1);
 
 
@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
     sem_destroy(&hayEspacio);
     sem_destroy(&hayDato);
     sem_destroy(&adelanteFacturador);
-    sem_destroy(&proveedorAcabado);
+    sem_destroy(&semProveedorAcabado);
     sem_destroy(&semLista);
 
     free(buffer);
@@ -240,7 +240,7 @@ void* proveedorFunc(void *arg) {
     }
     fclose(fichDestino);
     sem_post(&semaforoFichero);
-    sem_post(&proveedorAcabado); ///////////////////////////////////////////////
+    sem_post(&semProveedorAcabado); ///////////////////////////////////////////////
 
     // Cerrar archivos de salida y liberar memoria
     free(totalProductos);
@@ -318,7 +318,7 @@ void* facturadorFunc(void *arg) {
     }
 
 
-    sem_wait(&proveedorAcabado);
+    sem_wait(&semProveedorAcabado);
     // Procesar
     for (int i = 0; i < nConsumidores; i++) {
         sem_wait(&adelanteFacturador);

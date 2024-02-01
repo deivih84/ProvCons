@@ -1,10 +1,10 @@
 
-Cliente consumidor: 1
-  Productos consumidos: 5. De los cuales:
-     Producto tipo "a": 3
+Cliente consumidor: 0
+  Productos consumidos: 3. De los cuales:
+     Producto tipo "a": 2
      Producto tipo "b": 0
      Producto tipo "c": 0
-     Producto tipo "d": 2
+     Producto tipo "d": 1
      Producto tipo "e": 0
      Producto tipo "f": 0
      Producto tipo "g": 0
@@ -12,12 +12,12 @@ Cliente consumidor: 1
      Producto tipo "i": 0
      Producto tipo "j": 0
 
-Cliente consumidor: 0
-  Productos consumidos: 11. De los cuales:
-     Producto tipo "a": 5
+Cliente consumidor: 1
+  Productos consumidos: 13. De los cuales:
+     Producto tipo "a": 6
      Producto tipo "b": 0
      Producto tipo "c": 0
-     Producto tipo "d": 6
+     Producto tipo "d": 7
      Producto tipo "e": 0
      Producto tipo "f": 0
      Producto tipo "g": 0
