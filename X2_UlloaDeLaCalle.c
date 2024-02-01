@@ -350,7 +350,7 @@ void* facturadorFunc(void *arg) {
 
         for (int j = 0; j < nProveedores; j++) {
             for (int k = 0; k < 10; k++) {
-                proveedores[j] += nodoActual->productosConsumidosPorTipo[j][k];
+                proveedores[j] += nodoActual->productosConsumidosPorTipo[j][k]; // TODO reparar el cambio de matriz -> doble array
             }
         }
         for (int j = 0; j < 10; j++) { // Contar cuantos productos se han consumido por tipo entre todos los proveedores
