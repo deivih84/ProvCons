@@ -37,7 +37,7 @@ ConsumidorInfo *nodoPrincipal = NULL, *nodoActual = NULL;
 // Declaración de funciones
 void* proveedorFunc(void *arg);
 
-void* consumidorFunc(void *arg);
+void* consumidorFunc(void *argsCont);
 
 ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int **productosConsumidosPorTipo, int ID);
 

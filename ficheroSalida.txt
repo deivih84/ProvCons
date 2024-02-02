@@ -18,27 +18,6 @@ Cliente consumidor: 1
      Producto tipo "b": 0
      Producto tipo "c": 0
      Producto tipo "d": 7
-     Producto tipo "e": 0
-     Producto tipo "f": 0
-     Producto tipo "g": 0
-     Producto tipo "h": 0
-     Producto tipo "i": 0
-     Producto tipo "j": 0
 
-Total de productos consumidos: 16
-     16 del proveedor 0.
-Cliente consumidor que mas ha consumido: 1
-Proveedor: 0.
-   Productos procesados: 24.
-   Productos Inválidos: 8.
-   Productos Válidos: 16. De los cuales se han insertado:
-     8 de tipo "a".
-     0 de tipo "b".
-     0 de tipo "c".
-     8 de tipo "d".
-     0 de tipo "e".
-     0 de tipo "f".
-     0 de tipo "g".
-     0 de tipo "h".
      0 de tipo "i".
      0 de tipo "j".
