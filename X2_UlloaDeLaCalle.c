@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     int idHilosP[MAX_PROVEEDORES];
     int idHilosC[MAX_CONSUMIDORES];
     char pathProv[255], pathDest[255];
-    FILE *fichProveedor, *fichDestino;
+    FILE *fichProveedor, *fICHCOOOOOOMUN;
     pthread_t *proveedorThread, *consumidorThread, facturadorThread;
     ArgsProvFact **argsProv;
     ArgsCons **argsCons;
@@ -146,25 +146,23 @@ int main(int argc, char *argv[]) {
 
     // APERTURA DE FICHEROS
     sprintf(pathDest, "%s/%s", argv[1], argv[2]);
-    if ((fichDestino = fopen(pathDest, "w")) == NULL) {
+
+    if ((fICHCOOOOOOMUN = fopen(pathDest, "w")) == NULL) {
         fprintf(stderr, "Error al abrir el archivo salida.");
         exit(-1);
     }
-//    fprintf(fichDestino, "Hola, mundo!\n");
+    fprintf(fICHCOOOOOOMUN, "Hola, mundo!\n");
 
     printf("___%s___",pathDest);
-
-    argsProv[0]->file = fichDestino;
-    fclose(fichDestino);
 
     // PREPARACIÓN DE ARGUMENTOS
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     for (int i = 0; i < nProveedores; i++) {
-        argsProv[i]->file = fichDestino;
-        fprintf(argsProv[i]->file, "Hola, mundo!\n");
+        argsProv[i]->file = fICHCOOOOOOMUN;
         argsProv[i]->tamBuffer = argsCons[i]->tamBuffer = tamBuffer;
         argsProv[i]->nProveedores = argsCons[i]->nProveedores = contProvsAcabados = nProveedores;
         argsProv[i]->nConsumidores = argsCons[i]->nConsumidores = nConsumidores;
+        printf(" Hola%d ", nProveedores);
 
         sprintf(argsProv[i]->pathProv, "%s/proveedor%d.dat", argv[1], i);
         if ((fichProveedor = fopen(argsProv[i]->pathProv, "r")) == NULL) {
@@ -177,7 +175,7 @@ int main(int argc, char *argv[]) {
         argsCons[i]->consumidorID = i;
     }
 
-//    fclose(fichDestino);
+//    fclose(fICHCOOOOOOMUN);
 
 
 
@@ -216,6 +214,10 @@ int main(int argc, char *argv[]) {
     sem_destroy(&semLista);
 
     free(buffer);
+    free(argsProv);
+    free(argsProv);
+    free(proveedorThread);
+    free(consumidorThread);
 }
 
 void* proveedorFunc(void *arg) {
