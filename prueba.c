@@ -1,53 +1,49 @@
-#include <pthread.h>
 #include <stdio.h>
+#include <pthread.h>
 
-// Función que será ejecutada por el hilo
-void *threadFunction(void *arg) {
-    // Realizar un casting del puntero a void al tipo de datos esperado
-    char *arg1 = ((char **)arg)[0];
-    char *arg2 = ((char **)arg)[1];
-    FILE *file = ((FILE **)arg)[2];
+// Estructura para almacenar datos que se pasan a los hilos
+struct ThreadData {
+    int num;
+    char c;
+    FILE *fich;
+    int id;
+};
 
-    // Ahora puedes trabajar con los datos como deseas
-    printf("Argumento 1: %s\n", arg1);
-    printf("Argumento 2: %s\n", arg2);
+// Función que realizará cada hilo
+void *miFuncion(void *arg) {
+    struct ThreadData *data = (struct ThreadData *)arg;
 
-    // Ejemplo de lectura de archivo
-    if (file != NULL) {
-        // Realizar operaciones con el archivo aquí
-    }
+    // Realiza operaciones utilizando los datos pasados
+    // ...
+
+    // Ejemplo: escribir en el fichero
+    fprintf(data->fich, "Hilo %d escribió: %c%d\n", data->id, data->c, data->num);
 
     pthread_exit(NULL);
 }
 
-int main(int argc, char *argv[]) {
-    pthread_t myThread;
-
-    // Verificar que haya suficientes argumentos
-    if (argc < 3) {
-        fprintf(stderr, "Error: Se requieren al menos dos argumentos.\n");
+int main() {
+    FILE *fichero = fopen("miarchivo.txt", "w");
+    // Crea hilos y pasa los datos
+    pthread_t hilo1, hilo2;
+    if (fichero == NULL) {
+        fprintf(stderr, "Error al abrir el archivo.\n");
         return 1;
     }
 
-    // Crear un array de punteros a void con los datos que quieres pasar
-    void *threadArgs[] = { argv[1], argv[2], fopen("mi_archivo.txt", "r") };
+    // Crea datos para cada hilo
+    struct ThreadData data1 = {42, 'A', fichero, 0};
+    struct ThreadData data2 = {73, 'B', fichero, 1};
 
-    // Crear el hilo y pasarle el array como argumento
-    if (pthread_create(&myThread, NULL, threadFunction, (void *)threadArgs) != 0) {
-        fprintf(stderr, "Error al crear el hilo.\n");
-        return 1;
-    }
+    pthread_create(&hilo1, NULL, miFuncion, (void *)&data1);
+    pthread_create(&hilo2, NULL, miFuncion, (void *)&data2);
 
-    // Esperar a que el hilo termine
-    if (pthread_join(myThread, NULL) != 0) {
-        fprintf(stderr, "Error al esperar al hilo.\n");
-        return 1;
-    }
+    // Espera a que los hilos terminen
+    pthread_join(hilo1, NULL);
+    pthread_join(hilo2, NULL);
 
-    // Cerrar el archivo si fue abierto
-    if (threadArgs[2] != NULL) {
-        fclose((FILE *)threadArgs[2]);
-    }
+    // Cierra el fichero después de que los hilos hayan terminado
+    fclose(fichero);
 
     return 0;
 }
