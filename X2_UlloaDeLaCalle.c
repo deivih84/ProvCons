@@ -71,10 +71,8 @@ int esCadena(char *cadena);
 
 int main(int argc, char *argv[]) {
     int nConsumidores, nProveedores, tamBuffer;
-    int idHilosP[MAX_PROVEEDORES];
-    int idHilosC[MAX_CONSUMIDORES];
-    char pathProv[255], pathDest[255];
-    FILE *fichProveedor, *fICHCOOOOOOMUN;
+    char pathDest[255];
+    FILE *fichProveedor;
     pthread_t *proveedorThread, *consumidorThread, facturadorThread;
     ArgsProvFact argsProv[10];
     ArgsCons argsCons[10];
@@ -90,7 +88,6 @@ int main(int argc, char *argv[]) {
     tamBuffer = (!esCadena(argv[3])) ? atoi(argv[3]) : -1;
     nProveedores = (!esCadena(argv[4])) ? atoi(argv[4]) : -1;
     nConsumidores = (!esCadena(argv[5])) ? atoi(argv[5]) : -1;
-
 
 
 
@@ -199,13 +196,12 @@ int main(int argc, char *argv[]) {
     free(proveedorThread);
     free(consumidorThread);
 
-    printf("\033[1;32m Ejecutado con éxito para %d proveedores y %d consumidores. \033[0m\n", nProveedores, nProveedores);
-    printf("Se ha creado un fichero con los resultados en %s", argv[1]);
+    printf("\033[1;32mEjecutado con éxito para %d proveedores y %d consumidores.\033[0m\n", nProveedores, nProveedores);
+    printf("Se ha creado un fichero con los resultados en %s\n", argv[1]);
 }
 
 void* proveedorFunc(void *arg) {
-    int productosLeidos = 0, productosValidos = 0, indiceProveedor;
-    int *totalProductos;
+    int productosLeidos = 0, productosValidos = 0, indiceProveedor, *totalProductos;
     char c;
     FILE *fichProveedor;
     ArgsProvFact *args = (ArgsProvFact *) arg;
@@ -222,41 +218,36 @@ void* proveedorFunc(void *arg) {
         fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", 0);
         exit(-1);
     }
-    // Leer y procesar productos del archivo
 
 
+    // BUCLE PRINCIPAL
     while ((c = fgetc(fichProveedor)) != EOF) { // Saldrá cuando se acabe el fichero
-        if (esTipoValido(c)){
+        if (esTipoValido(c)) {
 
             sem_wait(&hayEspacio);
 
-            // Section crítica del índice de Proveedores
+            // SECCIÓN CRÍTICA del índice de Proveedores
             sem_wait(&semContP);
             indiceProveedor = itProdBuffer;
             itProdBuffer = (itProdBuffer + 1) % args->tamBuffer;
             sem_post(&semContP);
 
-
-            // Escribir en el búfer
+            // Escritura en el búfer
             buffer[indiceProveedor].tipo = c;
             buffer[indiceProveedor].proveedorID = args->proveedorID;
             sem_post(&hayDato);
 
-            // Incrementar contador de productos válidos
+            // Operaciones para más tarde
             productosValidos++;
             totalProductos[c - 'a']++;
-            productosLeidos++;
-
-        } else { // NO ES TIPO VALIDO
-            productosLeidos++;
         }
+        productosLeidos++;
     }
     fclose(fichProveedor);
 
 
-    // Sección crítica contador de proveedores acabados
+    // SECCIÓN CRÍTICA del contador de proveedores acabados
     sem_wait(&semContProveedorAcabado);
-
     if (--contProvsAcabados == 0) { // Si entras aquí eres el último proveedor con vida
         sem_wait(&hayEspacio);
 
@@ -271,20 +262,18 @@ void* proveedorFunc(void *arg) {
     sem_post(&semContProveedorAcabado);
 
 
-    // Sección crítica fichero
+    // SECCIÓN CRÍTICA del fichero
     sem_wait(&semaforoFichero);
-
     fprintf(args->file, "Proveedor: %d.\n", args->proveedorID);
     fprintf(args->file, "   Productos procesados: %d.\n", productosLeidos);
     fprintf(args->file, "   Productos Inválidos: %d.\n", productosLeidos - productosValidos);
     fprintf(args->file, "   Productos Válidos: %d. De los cuales se han insertado:\n", productosValidos);
-
     for (char tipo = 'a'; tipo <= 'j'; tipo++) {
         fprintf(args->file, "     %d de tipo \"%c\".\n", totalProductos[tipo - 'a'], tipo);
     }
     sem_post(&semaforoFichero);
 
-    // Cerrar archivos de salida y liberar memoria
+
     free(totalProductos);
     pthread_exit(NULL);
 }
@@ -300,8 +289,7 @@ void *consumidorFunc(void *argsCont) {
         fprintf(stderr, "Error al reservar memoria para las filas.\n");
         exit(-1);
     }
-    // Sé que no es necesaria la memoria dinámica aquí, pero asi nos inicializa a 0 el array y no sacamos el espacio de la pila
-    if ((numProdsConsumidosPorTipo = calloc(10, sizeof(int))) == NULL) {
+    if ((numProdsConsumidosPorTipo = calloc(NPRODUCTOS, sizeof(int))) == NULL) {
         fprintf(stderr, "Error al reservar memoria para las filas.\n");
         exit(-1);
     }
@@ -315,7 +303,7 @@ void *consumidorFunc(void *argsCont) {
         sem_wait(&semContC);
         producto = buffer[itConsBuffer];
         if (producto.tipo  == 'F') { // Si es F les digo al resto de consumidores que hay dato y no modifico el contador para que también lean la F
-            sem_post(&semContC);
+            sem_post(&semContC); //Fin sección crítica
             sem_post(&hayDato);
             bandera = 0;
         }
@@ -345,12 +333,10 @@ void* facturadorFunc(void *argsFact) {
 
     if ((proveedores = calloc(args->nProveedores, sizeof(int))) == NULL) {
         fprintf(stderr, "Error al asignar memoria para el array de proveedores.\n");
-        exit(-1);
-    }
+        exit(-1);}
     if ((consumidores = calloc(args->nConsumidores, sizeof(int))) == NULL) {
         fprintf(stderr, "Error al asignar memoria para el array de consumidores.\n");
-        exit(-1);
-    }
+        exit(-1);}
 
 
     // Procesar
