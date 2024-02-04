@@ -31,15 +31,15 @@ typedef struct nodo {
 } ConsumidorInfo;
 
 
-typedef struct argsProvFact {
+typedef struct {
     int proveedorID;
     int tamBuffer;
     int nProveedores;
     int nConsumidores;
-    char *pathProv;
+    char pathProv[255];
     FILE *file; // EL FICHERO ABIERTO.
 } ArgsProvFact;
-typedef struct argsCons {
+typedef struct {
     int consumidorID;
     int tamBuffer;
     int nProveedores;
@@ -50,6 +50,7 @@ typedef struct argsCons {
 sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, semContProveedorAcabado, semLista;
 Producto *buffer;
 int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0;
+FILE *ficheroSalida;
 ConsumidorInfo *nodoPrincipal = NULL, *nodoActual = NULL;
 
 // Declaración de funciones
@@ -75,8 +76,8 @@ int main(int argc, char *argv[]) {
     char pathProv[255], pathDest[255];
     FILE *fichProveedor, *fICHCOOOOOOMUN;
     pthread_t *proveedorThread, *consumidorThread, facturadorThread;
-    ArgsProvFact **argsProv;
-    ArgsCons **argsCons;
+    ArgsProvFact argsProv[10];
+    ArgsCons argsCons[10];
 
     // Verificación de la cantidad de argumentos
     if (argc != 6) {
@@ -104,18 +105,14 @@ int main(int argc, char *argv[]) {
 
 
 
-//    if ((argsProv = calloc(nProveedores, sizeof(ArgsProvFact))) == NULL) {
+//    if ((argsProv = (ArgsProvFact *) calloc(nProveedores, sizeof(ArgsProvFact))) == NULL) {
 //        fprintf(stderr, "Error al asignar memoria para los argumentos de los productores.\n");
 //        exit(-1);
 //    }
-    if ((argsProv = malloc(nProveedores * sizeof(ArgsProvFact))) == NULL) {
-        fprintf(stderr, "Error al asignar memoria para los argumentos de los productores.\n");
-        exit(-1);
-    }
-    if ((argsCons = calloc(nConsumidores, sizeof(ArgsCons))) == NULL) {
-        fprintf(stderr, "Error al asignar memoria para los argumentos de los consumidores.\n");
-        exit(-1);
-    }
+//    if ((argsCons = calloc(nConsumidores, sizeof(ArgsCons))) == NULL) {
+//        fprintf(stderr, "Error al asignar memoria para los argumentos de los consumidores.\n");
+//        exit(-1);
+//    }
 
 
 
@@ -132,6 +129,7 @@ int main(int argc, char *argv[]) {
         exit(-1);
     }
 
+
     sem_init(&hayEspacio, 0, tamBuffer);
     sem_init(&semaforoFichero, 0, 1);
     sem_init(&semContP, 0, 1); // Semáforo para el contador de proveedores
@@ -143,52 +141,54 @@ int main(int argc, char *argv[]) {
 
 
 
-
     // APERTURA DE FICHEROS
     sprintf(pathDest, "%s/%s", argv[1], argv[2]);
 
-    if ((fICHCOOOOOOMUN = fopen(pathDest, "w")) == NULL) {
+    if ((ficheroSalida = fopen(pathDest, "w")) == NULL) {
         fprintf(stderr, "Error al abrir el archivo salida.");
         exit(-1);
     }
-    fprintf(fICHCOOOOOOMUN, "Hola, mundo!\n");
 
-    printf("___%s___",pathDest);
+//    fclose(ficheroSalida);
+
 
     // PREPARACIÓN DE ARGUMENTOS
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     for (int i = 0; i < nProveedores; i++) {
-        argsProv[i]->file = fICHCOOOOOOMUN;
-        argsProv[i]->tamBuffer = argsCons[i]->tamBuffer = tamBuffer;
-        argsProv[i]->nProveedores = argsCons[i]->nProveedores = contProvsAcabados = nProveedores;
-        argsProv[i]->nConsumidores = argsCons[i]->nConsumidores = nConsumidores;
-        printf(" Hola%d ", nProveedores);
+        argsProv[i].proveedorID = i;
+        argsProv[i].file = ficheroSalida;
+        argsProv[i].tamBuffer = tamBuffer;
+        argsProv[i].nProveedores = contProvsAcabados = nProveedores;
+        argsProv[i].nConsumidores = nConsumidores;
 
-        sprintf(argsProv[i]->pathProv, "%s/proveedor%d.dat", argv[1], i);
-        if ((fichProveedor = fopen(argsProv[i]->pathProv, "r")) == NULL) {
+        sprintf(argsProv[i].pathProv, "%s/proveedor%d.dat", argv[1], i);
+        printf("%s   \n",argsProv[i].pathProv);
+        if ((fichProveedor = fopen(argsProv[i].pathProv, "r")) == NULL) {
             fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", 0);
             exit(-1);
         }
         fclose(fichProveedor);
     } //////////////////////////////////////////////////////////////////////////////////////////////////////////
-    for (int i = 0; i < nConsumidores; i++) {
-        argsCons[i]->consumidorID = i;
-    }
 
-//    fclose(fICHCOOOOOOMUN);
+    for (int i = 0; i < nConsumidores; i++) {
+        argsCons[i].consumidorID = i;
+        argsCons[i].nProveedores = nProveedores;
+        argsCons[i].tamBuffer = tamBuffer;
+        argsCons[i].nConsumidores = nConsumidores;
+    }
 
 
 
     // LANZAMIENTO DE HILOS
     for (int i = 0; i < nProveedores; i++) {
-        argsProv[i]->proveedorID = i;
-        pthread_create(&proveedorThread[i], NULL, (void *) proveedorFunc, (void *)argsProv);
+//        argsProv[i].proveedorID = i;
+        pthread_create(&proveedorThread[i], NULL, (void *) proveedorFunc, (void *)&argsProv[i]);
     }
     for (int i = 0; i < nConsumidores; i++) {
-        argsCons[i]->consumidorID = i;
-        pthread_create(&consumidorThread[i], NULL, (void *) consumidorFunc, (void *)argsCons);
+//        argsCons[i].consumidorID = i;
+        pthread_create(&consumidorThread[i], NULL, (void *) consumidorFunc, (void *)&argsCons[i]);
     }
-    pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, (void *)argsProv);
+    pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, (void *)&argsProv[0]);
 
 
     // Esperar a que los hilos terminen
@@ -202,6 +202,7 @@ int main(int argc, char *argv[]) {
 
 
 
+    fclose(ficheroSalida);
 
     // Destruir semáforos y liberar memoria
     sem_destroy(&semaforoFichero);
@@ -214,14 +215,14 @@ int main(int argc, char *argv[]) {
     sem_destroy(&semLista);
 
     free(buffer);
-    free(argsProv);
-    free(argsProv);
+//    free(argsProv);
+//    free(argsProv);
     free(proveedorThread);
     free(consumidorThread);
 }
 
 void* proveedorFunc(void *arg) {
-    int productosLeidos = 0, productosValidos = 0, proveedorID = 0, indiceProveedor;
+    int productosLeidos = 0, productosValidos = 0, indiceProveedor;
     int *totalProductos;
     char c;
     FILE *fichProveedor;
@@ -241,6 +242,7 @@ void* proveedorFunc(void *arg) {
     }
     // Leer y procesar productos del archivo
 
+
     while ((c = fgetc(fichProveedor)) != EOF) { // Saldrá cuando se acabe el fichero
         if (esTipoValido(c)){
 
@@ -255,7 +257,7 @@ void* proveedorFunc(void *arg) {
 
             // Escribir en el búfer
             buffer[indiceProveedor].tipo = c;
-            buffer[indiceProveedor].proveedorID = proveedorID;
+            buffer[indiceProveedor].proveedorID = args->proveedorID;
             sem_post(&hayDato);
 
             // Incrementar contador de productos válidos
@@ -290,7 +292,7 @@ void* proveedorFunc(void *arg) {
     // Sección crítica fichero
     sem_wait(&semaforoFichero);
 
-    fprintf(args->file, "Proveedor: %d.\n", proveedorID);
+    fprintf(args->file, "Proveedor: %d.\n", args->proveedorID);
     fprintf(args->file, "   Productos procesados: %d.\n", productosLeidos);
     fprintf(args->file, "   Productos Inválidos: %d.\n", productosLeidos - productosValidos);
     fprintf(args->file, "   Productos Válidos: %d. De los cuales se han insertado:\n", productosValidos);
@@ -307,13 +309,17 @@ void* proveedorFunc(void *arg) {
 
 void *consumidorFunc(void *argsCont) {
     int bandera = 1;
-    int numProdsConsumidos = 0, numProdsConsumidosPorTipo[10], *numProdsConsumidosPorProveedor;
+    int numProdsConsumidos = 0, *numProdsConsumidosPorTipo, *numProdsConsumidosPorProveedor;
     Producto producto;
     ArgsCons *args = (ArgsCons *)argsCont;
 
 
-    ;
     if ((numProdsConsumidosPorProveedor = calloc(args->nProveedores, sizeof(int))) == NULL) {
+        fprintf(stderr, "Error al reservar memoria para las filas.\n");
+        exit(-1);
+    }
+    // Sé que no es necesaria la memoria dinámica aquí, pero asi nos inicializa a 0 el array y no sacamos el espacio de la pila
+    if ((numProdsConsumidosPorTipo = calloc(10, sizeof(int))) == NULL) {
         fprintf(stderr, "Error al reservar memoria para las filas.\n");
         exit(-1);
     }
@@ -359,14 +365,9 @@ void* facturadorFunc(void *argsFact) {
         fprintf(stderr, "Error al asignar memoria para el array de proveedores.\n");
         exit(-1);
     }
-
     if ((consumidores = calloc(args->nConsumidores, sizeof(int))) == NULL) {
         fprintf(stderr, "Error al asignar memoria para el array de consumidores.\n");
         exit(-1);
-    }
-
-    for (int k = 0; k < args->nConsumidores; k++) { // Inicializar array consumidores // TODO quitar, irrelevante
-        consumidores[k] = 0;
     }
 
 
@@ -379,13 +380,12 @@ void* facturadorFunc(void *argsFact) {
             tipos[k] = 0;
         }
 
-        for (int j = 0; j < args->nProveedores; j++) {
-            proveedores[j] += nodoActual->totalPorProveedor[j]; // TODO reparar el cambio de matriz -> doble array
+        for (int j = 0; j <args->nProveedores; j++) {
+            proveedores[j] += nodoActual->totalPorProveedor[j];
         }
+
         for (int j = 0; j < 10; j++) { // Contar cuantos productos se han consumido por tipo entre todos los proveedores
-            for (int k = 0; k < args->nProveedores; k++) {
-                tipos[j] += nodoActual->productosConsumidosPorTipo[k];
-            }
+            tipos[j] += nodoActual->productosConsumidosPorTipo[j];
         }
         consumidores[i] = nodoActual->productosConsumidos; // Para sacar el que más ha consumido más tarde
 
@@ -418,7 +418,7 @@ void* facturadorFunc(void *argsFact) {
 
     // ESCRITURA CONCLUSION FINAL
     fprintf(args->file, "\nTotal de productos consumidos: %d\n", totalProductos);
-    for (int j = 0; j < args->nProveedores; ++j) {
+    for (int j = 0; j < args->nProveedores; j++) {
         fprintf(args->file, "     %d del proveedor %d.\n", proveedores[j], j);
     }
     fprintf(args->file, "Cliente consumidor que mas ha consumido: %d\n", IDConsMasGordo);
@@ -435,7 +435,7 @@ void* facturadorFunc(void *argsFact) {
 int esTipoValido(char c) { return (c >= 'a' && c <= 'j'); }
 
 int esCadena(char *cadena) {
-    for (int i = 0; i < strlen(cadena); ++i) {
+    for (int i = 0; i < strlen(cadena); i++) {
         if (!isdigit(cadena[i])) {
             return 1; // Devuelve 1 si no es una cadena de dígitos
         }

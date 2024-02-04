@@ -1,0 +1,44 @@
+Proveedor: 0.
+   Productos procesados: 144.
+   Productos Inválidos: 48.
+   Productos Válidos: 96. De los cuales se han insertado:
+     48 de tipo "a".
+     0 de tipo "b".
+     0 de tipo "c".
+     48 de tipo "d".
+     0 de tipo "e".
+     0 de tipo "f".
+     0 de tipo "g".
+     0 de tipo "h".
+     0 de tipo "i".
+     0 de tipo "j".
+
+Cliente consumidor: 0
+  Productos consumidos: 96. De los cuales:
+     Producto tipo "a": 48
+     Producto tipo "b": 0
+     Producto tipo "c": 0
+     Producto tipo "d": 48
+     Producto tipo "e": 0
+     Producto tipo "f": 0
+     Producto tipo "g": 0
+     Producto tipo "h": 0
+     Producto tipo "i": 0
+     Producto tipo "j": 0
+
+Cliente consumidor: 1
+  Productos consumidos: 0. De los cuales:
+     Producto tipo "a": 0
+     Producto tipo "b": 0
+     Producto tipo "c": 0
+     Producto tipo "d": 0
+     Producto tipo "e": 0
+     Producto tipo "f": 0
+     Producto tipo "g": 0
+     Producto tipo "h": 0
+     Producto tipo "i": 0
+     Producto tipo "j": 0
+
+Total de productos consumidos: 96
+     96 del proveedor 0.
+Cliente consumidor que mas ha consumido: 0
