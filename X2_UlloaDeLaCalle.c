@@ -25,7 +25,6 @@ typedef struct nodo {
     int consumidorID;
     int productosConsumidos;
     int *productosConsumidosPorTipo;
-    int *numProdsConsumidosPorProveedor;
     int *totalPorProveedor;
     struct nodo *siguiente;
 } ConsumidorInfo;
@@ -51,20 +50,16 @@ sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturad
 Producto *buffer;
 int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0;
 FILE *ficheroSalida;
-ConsumidorInfo *nodoPrincipal = NULL, *nodoActual = NULL;
+ConsumidorInfo *nodoInicial = NULL, *nodoActual = NULL;
 
 // Declaración de funciones
 void* proveedorFunc(void *arg);
 
 void* consumidorFunc(void *argsCont);
 
-ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int *productosConsumidosPorTipo, int *totalPorProveedor, int ID);
-
 void liberarLista(ConsumidorInfo *nodoP);
 
 void* facturadorFunc(void *arg);
-
-int esTipoValido(char c);
 
 int esCadena(char *cadena);
 
@@ -74,14 +69,13 @@ int main(int argc, char *argv[]) {
     char pathDest[255];
     FILE *fichProveedor;
     pthread_t *proveedorThread, *consumidorThread, facturadorThread;
-    ArgsProvFact argsProv[10];
-    ArgsCons argsCons[10];
+    ArgsProvFact *argsProv;
+    ArgsCons *argsCons;
 
     // Verificación de la cantidad de argumentos
     if (argc != 6) {
         fprintf(stderr, "Error: Número incorrecto de argumentos.\n");
-        exit(-1);
-    }
+        exit(-1);}
 
 
     // Verificar si los parámetros pasados son válidos o no. Si no, se pasa -1 para salir en el próximo if
@@ -90,36 +84,43 @@ int main(int argc, char *argv[]) {
     nConsumidores = (!esCadena(argv[5])) ? atoi(argv[5]) : -1;
 
 
-
+    // COMPROBACIONES
     if (tamBuffer <= 0 || tamBuffer > 5000) {
         fprintf(stderr, "Error: T debe ser un entero positivo menor o igual a 5000.\n");
-        exit(-1);
-    }
+        exit(-1);}
+    if (nProveedores <= 0 || nProveedores > MAX_PROVEEDORES) {
+        fprintf(stderr, "Error: P debe ser un entero positivo menor o igual a %d.\n", MAX_PROVEEDORES);
+        exit(-1);}
     if (nConsumidores <= 0 || nConsumidores > MAX_CONSUMIDORES) {
         fprintf(stderr, "Error: C debe ser un entero positivo menor o igual a %d.\n", MAX_CONSUMIDORES);
-        exit(-1);
-    }
+        exit(-1);}
+
+
+    // RESERVA DINÁMICA
+    if ((argsProv = calloc(nProveedores, sizeof(ArgsProvFact))) == NULL) {
+        fprintf(stderr, "Error al asignar memoria para los hilos proveedores.\n");
+        exit(-1);}
+    if ((argsCons = calloc(nConsumidores, sizeof(ArgsCons))) == NULL) {
+        fprintf(stderr, "Error al asignar memoria para los hilos proveedores.\n");
+        exit(-1);}
     if ((proveedorThread = calloc(nProveedores, sizeof(pthread_t))) == NULL) {
         fprintf(stderr, "Error al asignar memoria para los hilos proveedores.\n");
-        exit(-1);
-    }
+        exit(-1);}
     if ((consumidorThread = calloc(nConsumidores, sizeof(pthread_t))) == NULL) {
         fprintf(stderr, "Error al asignar memoria para los hilos consumidores.\n");
-        exit(-1);
-    }
+        exit(-1);}
     if ((buffer = calloc(tamBuffer, sizeof(Producto))) == NULL) {
         fprintf(stderr, "Error al asignar memoria para el buffer compartido.\n");
-        exit(-1);
-    }
+        exit(-1);}
 
 
+    sem_init(&hayDato, 0, 0);
     sem_init(&hayEspacio, 0, tamBuffer);
-    sem_init(&semaforoFichero, 0, 1);
     sem_init(&semContP, 0, 1); // Semáforo para el contador de proveedores
     sem_init(&semContC, 0, 1); // Semáforo para el contador de consumidores
-    sem_init(&hayDato, 0, 0);
-    sem_init(&adelanteFacturador, 0, 0);
     sem_init(&semContProveedorAcabado, 0, 1);
+    sem_init(&semaforoFichero, 0, 1);
+    sem_init(&adelanteFacturador, 0, 0);
     sem_init(&semLista, 0, 1);
 
 
@@ -128,8 +129,7 @@ int main(int argc, char *argv[]) {
     sprintf(pathDest, "%s/%s", argv[1], argv[2]);
     if ((ficheroSalida = fopen(pathDest, "w")) == NULL) {
         fprintf(stderr, "Error al abrir el archivo salida.");
-        exit(-1);
-    }
+        exit(-1);}
 
 
 
@@ -144,8 +144,7 @@ int main(int argc, char *argv[]) {
         sprintf(argsProv[i].pathProv, "%s/proveedor%d.dat", argv[1], i);
         if ((fichProveedor = fopen(argsProv[i].pathProv, "r")) == NULL) {
             fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", 0);
-            exit(-1);
-        }
+            exit(-1);}
         fclose(fichProveedor);
     }
     for (int i = 0; i < nConsumidores; i++) {
@@ -191,13 +190,11 @@ int main(int argc, char *argv[]) {
     sem_destroy(&semLista);
 
     free(buffer);
-//    free(argsProv);
-//    free(argsProv);
     free(proveedorThread);
     free(consumidorThread);
 
-    printf("\033[1;32mEjecutado con éxito para %d proveedores y %d consumidores.\033[0m\n", nProveedores, nProveedores);
-    printf("Se ha creado un fichero con los resultados en %s\n", argv[1]);
+    printf("\033[1;32m\nEjecutado con éxito para %d proveedores y %d consumidores.\033[0m\n", nProveedores, nProveedores);
+    printf("Se ha creado un fichero de nombre \033[1;36m%s\033[0m con los resultados en %s\n\n", argv[2], argv[1]);
 }
 
 void* proveedorFunc(void *arg) {
@@ -209,21 +206,18 @@ void* proveedorFunc(void *arg) {
     totalProductos = calloc(NPRODUCTOS, sizeof(Producto));
     if (totalProductos == NULL) { // No haría falta la mem.Dinámica pues NPRODUCTOS se conoce en compilación
         fprintf(stderr, "Error al asignar memoria para el array totalProductos.\n");
-        exit(-1);
-    }
+        exit(-1);}
 
 
     // APERTURA FICHERO
     if ((fichProveedor = fopen(args->pathProv, "r")) == NULL) {
         fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", 0);
-        exit(-1);
-    }
+        exit(-1);}
 
 
     // BUCLE PRINCIPAL
     while ((c = fgetc(fichProveedor)) != EOF) { // Saldrá cuando se acabe el fichero
-        if (esTipoValido(c)) {
-
+        if ((c >= 'a' && c <= 'j')) {
             sem_wait(&hayEspacio);
 
             // SECCIÓN CRÍTICA del índice de Proveedores
@@ -279,20 +273,21 @@ void* proveedorFunc(void *arg) {
 }
 
 void *consumidorFunc(void *argsCont) {
-    int bandera = 1;
-    int numProdsConsumidos = 0, *numProdsConsumidosPorTipo, *numProdsConsumidosPorProveedor;
+    int bandera = 1, numProdsConsumidos = 0, *numProdsConsumidosPorTipo, *numProdsConsumidosPorProveedor;
     Producto producto;
+    ConsumidorInfo *nuevoConsumidor, *aux;
     ArgsCons *args = (ArgsCons *)argsCont;
 
 
     if ((numProdsConsumidosPorProveedor = calloc(args->nProveedores, sizeof(int))) == NULL) {
         fprintf(stderr, "Error al reservar memoria para las filas.\n");
-        exit(-1);
-    }
+        exit(-1);}
     if ((numProdsConsumidosPorTipo = calloc(NPRODUCTOS, sizeof(int))) == NULL) {
         fprintf(stderr, "Error al reservar memoria para las filas.\n");
-        exit(-1);
-    }
+        exit(-1);}
+    if ((nuevoConsumidor = calloc(1,sizeof(ConsumidorInfo))) == NULL) {
+        fprintf(stderr, "Error al asignar memoria para el nuevo nodo de la lista enlazada.\n");
+        exit(-1);}
 
 
     // Consumir productos del búfer
@@ -318,9 +313,28 @@ void *consumidorFunc(void *argsCont) {
             sem_post(&hayEspacio);
         }
     }
+
+
+
+    // SECCIÓN CRÍTICA DE LA LISTA
     sem_wait(&semLista);
-    nodoActual = agregarConsumidor(nodoActual, numProdsConsumidos, numProdsConsumidosPorTipo, numProdsConsumidosPorProveedor,args->consumidorID); //hay que pasarle prodConsPorTipo
+    nuevoConsumidor->productosConsumidos = numProdsConsumidos;
+    nuevoConsumidor->productosConsumidosPorTipo = numProdsConsumidosPorTipo;
+    nuevoConsumidor->totalPorProveedor = numProdsConsumidosPorProveedor;
+    nuevoConsumidor->consumidorID = args->consumidorID;
+    nuevoConsumidor->siguiente = NULL;
+    if (nodoActual == NULL) { // Debe de ser el primer nodo
+        nodoInicial = nodoActual;
+        nodoActual = nuevoConsumidor;
+    } else {
+        aux = nodoActual;
+        while (aux->siguiente != NULL) {
+            aux = aux->siguiente;
+        }
+        aux->siguiente = nuevoConsumidor;
+    }
     sem_post(&semLista);
+
 
     sem_post(&adelanteFacturador);
     pthread_exit(NULL);
@@ -343,19 +357,11 @@ void* facturadorFunc(void *argsFact) {
     for (int i = 0; i < args->nConsumidores; i++) {
         sem_wait(&adelanteFacturador);
 
-        for (int k = 0; k < 10; k++) { // Inicializar array de tipos de producto
-            tipos[k] = 0;
-        }
 
-        for (int j = 0; j <args->nProveedores; j++) {
-            proveedores[j] += nodoActual->totalPorProveedor[j];
-        }
-
-        for (int j = 0; j < 10; j++) { // Contar cuantos productos se han consumido por tipo entre todos los proveedores
-            tipos[j] += nodoActual->productosConsumidosPorTipo[j];
-        }
+        // OPERACIONES
+        for (int j = 0; j <args->nProveedores; j++) proveedores[j] += nodoActual->totalPorProveedor[j];
+        for (int j = 0; j < 10; j++) tipos[j] += nodoActual->productosConsumidosPorTipo[j];
         consumidores[i] = nodoActual->productosConsumidos; // Para sacar el que más ha consumido más tarde
-
 
 
         // ESCRITURA CONSUMIDORES
@@ -370,10 +376,7 @@ void* facturadorFunc(void *argsFact) {
         nodoActual = nodoActual->siguiente;
     }
 
-
-    for (int j = 0; j < args->nProveedores; j++) { // Total de productos
-        totalProductos += proveedores[j];
-    }
+    for (int j = 0; j < args->nProveedores; j++) totalProductos += proveedores[j];
     for (int j = 0; j < args->nConsumidores; j++) { // Hallar el consumidor que más a consumido.
         if (maximo <= consumidores[j]) {
             maximo = consumidores[j];
@@ -390,16 +393,20 @@ void* facturadorFunc(void *argsFact) {
     }
     fprintf(args->file, "Cliente consumidor que mas ha consumido: %d\n", IDConsMasGordo);
 
-    //fclose(args->file);
-    liberarLista(nodoPrincipal);
+
+
+    // LIBERAR LA LISTA
+    while (nodoInicial != NULL) {
+        nodoActual = nodoInicial->siguiente;
+        free(nodoInicial);
+        nodoInicial = nodoActual;
+    }
+
     free(proveedores);
     free(consumidores);
 
     pthread_exit(NULL);
 }
-
-// Devuelve True si está entre a y j (incluidas)
-int esTipoValido(char c) { return (c >= 'a' && c <= 'j'); }
 
 int esCadena(char *cadena) {
     for (int i = 0; i < strlen(cadena); i++) {
@@ -410,39 +417,12 @@ int esCadena(char *cadena) {
     return 0; // Devuelve 0 si es una cadena de dígitos
 }
 
-
-ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos, int *productosConsumidosPorTipo, int *totalPorProveedor, int ID) {
-    ConsumidorInfo *nuevoConsumidor, *aux;
-
-    if ((nuevoConsumidor = calloc(1,sizeof(ConsumidorInfo))) == NULL) {
-        fprintf(stderr, "Error al asignar memoria para el nuevo nodo de la lista enlazada.\n");
-        exit(-1);
-    }
-    nuevoConsumidor->productosConsumidos = productosConsumidos;
-    nuevoConsumidor->productosConsumidosPorTipo = productosConsumidosPorTipo;
-    nuevoConsumidor->totalPorProveedor = totalPorProveedor;
-    nuevoConsumidor->consumidorID = ID;
-    nuevoConsumidor->siguiente = NULL;
-    if (nodo == NULL) { // Debe de ser el primer nodo
-        nodoPrincipal = nodo;
-        nodo = nuevoConsumidor;
-    } else {
-        aux = nodo;
-        while (aux->siguiente != NULL) {
-            aux = aux->siguiente;
-        }
-        aux->siguiente = nuevoConsumidor;
-    }
-    return nodo;
-}
 void liberarLista(ConsumidorInfo *nodoP) { // Función para liberar la lista enlazada ahora que ya no se necesita
     ConsumidorInfo *actual = nodoP;
     ConsumidorInfo *siguiente;
 
     while (actual != NULL) {
         siguiente = actual->siguiente;
-
-        // Libera la memoria del nodo
         free(actual);
         actual = siguiente;
     }

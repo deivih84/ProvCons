@@ -32,7 +32,7 @@ sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturad
 Producto *buffer;
 char *path;
 int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0, tamBuffer, nProveedores = 1, nConsumidores;
-ConsumidorInfo *nodoPrincipal = NULL, *nodoActual = NULL;
+ConsumidorInfo *nodoInicial = NULL, *nodoActual = NULL;
 
 // Declaración de funciones
 void* proveedorFunc(void *arg);
@@ -376,7 +376,7 @@ void* facturadorFunc(void *arg) {
     fclose(fichDestino);
     sem_post(&semaforoFichero);
 
-    liberarLista(nodoPrincipal);
+    liberarLista(nodoInicial);
     free(proveedores);
     free(consumidores);
 
@@ -409,7 +409,7 @@ ConsumidorInfo *agregarConsumidor(ConsumidorInfo *nodo, int productosConsumidos,
     nuevoConsumidor->consumidorID = ID;
     nuevoConsumidor->siguiente = NULL;
     if (nodo == NULL) { // Debe de ser el primer nodo
-        nodoPrincipal = nodo;
+        nodoInicial = nodo;
         nodo = nuevoConsumidor;
     } else {
         aux = nodo;
