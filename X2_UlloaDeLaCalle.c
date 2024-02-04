@@ -102,20 +102,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error: C debe ser un entero positivo menor o igual a %d.\n", MAX_CONSUMIDORES);
         exit(-1);
     }
-
-
-
-//    if ((argsProv = (ArgsProvFact *) calloc(nProveedores, sizeof(ArgsProvFact))) == NULL) {
-//        fprintf(stderr, "Error al asignar memoria para los argumentos de los productores.\n");
-//        exit(-1);
-//    }
-//    if ((argsCons = calloc(nConsumidores, sizeof(ArgsCons))) == NULL) {
-//        fprintf(stderr, "Error al asignar memoria para los argumentos de los consumidores.\n");
-//        exit(-1);
-//    }
-
-
-
     if ((proveedorThread = calloc(nProveedores, sizeof(pthread_t))) == NULL) {
         fprintf(stderr, "Error al asignar memoria para los hilos proveedores.\n");
         exit(-1);
@@ -141,19 +127,16 @@ int main(int argc, char *argv[]) {
 
 
 
-    // APERTURA DE FICHEROS
+    // APERTURA DE FICHERO DESTINO
     sprintf(pathDest, "%s/%s", argv[1], argv[2]);
-
     if ((ficheroSalida = fopen(pathDest, "w")) == NULL) {
         fprintf(stderr, "Error al abrir el archivo salida.");
         exit(-1);
     }
 
-//    fclose(ficheroSalida);
 
 
     // PREPARACIÓN DE ARGUMENTOS
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////
     for (int i = 0; i < nProveedores; i++) {
         argsProv[i].proveedorID = i;
         argsProv[i].file = ficheroSalida;
@@ -162,14 +145,12 @@ int main(int argc, char *argv[]) {
         argsProv[i].nConsumidores = nConsumidores;
 
         sprintf(argsProv[i].pathProv, "%s/proveedor%d.dat", argv[1], i);
-        printf("%s   \n",argsProv[i].pathProv);
         if ((fichProveedor = fopen(argsProv[i].pathProv, "r")) == NULL) {
             fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", 0);
             exit(-1);
         }
         fclose(fichProveedor);
-    } //////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+    }
     for (int i = 0; i < nConsumidores; i++) {
         argsCons[i].consumidorID = i;
         argsCons[i].nProveedores = nProveedores;
@@ -181,11 +162,9 @@ int main(int argc, char *argv[]) {
 
     // LANZAMIENTO DE HILOS
     for (int i = 0; i < nProveedores; i++) {
-//        argsProv[i].proveedorID = i;
         pthread_create(&proveedorThread[i], NULL, (void *) proveedorFunc, (void *)&argsProv[i]);
     }
     for (int i = 0; i < nConsumidores; i++) {
-//        argsCons[i].consumidorID = i;
         pthread_create(&consumidorThread[i], NULL, (void *) consumidorFunc, (void *)&argsCons[i]);
     }
     pthread_create(&facturadorThread, NULL, (void *) facturadorFunc, (void *)&argsProv[0]);
@@ -219,6 +198,9 @@ int main(int argc, char *argv[]) {
 //    free(argsProv);
     free(proveedorThread);
     free(consumidorThread);
+
+    printf("\033[1;32m Ejecutado con éxito para %d proveedores y %d consumidores. \033[0m\n", nProveedores, nProveedores);
+    printf("Se ha creado un fichero con los resultados en %s", argv[1]);
 }
 
 void* proveedorFunc(void *arg) {
@@ -274,8 +256,8 @@ void* proveedorFunc(void *arg) {
 
     // Sección crítica contador de proveedores acabados
     sem_wait(&semContProveedorAcabado);
+
     if (--contProvsAcabados == 0) { // Si entras aquí eres el último proveedor con vida
-        sem_post(&semContProveedorAcabado);
         sem_wait(&hayEspacio);
 
         sem_wait(&semContP); // Actualizar el contador para poner una F
@@ -285,8 +267,8 @@ void* proveedorFunc(void *arg) {
 
         buffer[indiceProveedor].tipo = 'F';
         sem_post(&hayDato);
-    } else {sem_post(&semContProveedorAcabado);}
-
+    }
+    sem_post(&semContProveedorAcabado);
 
 
     // Sección crítica fichero
@@ -371,7 +353,6 @@ void* facturadorFunc(void *argsFact) {
     }
 
 
-    sem_wait(&semContProveedorAcabado);
     // Procesar
     for (int i = 0; i < args->nConsumidores; i++) {
         sem_wait(&adelanteFacturador);
