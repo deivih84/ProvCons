@@ -56,8 +56,6 @@ void* proveedorFunc(void *arg);
 
 void* consumidorFunc(void *argsCont);
 
-void liberarLista(ConsumidorInfo *nodoP);
-
 void* facturadorFunc(void *arg);
 
 int esCadena(char *cadena);
@@ -192,7 +190,7 @@ int main(int argc, char *argv[]) {
     free(proveedorThread);
     free(consumidorThread);
 
-    printf("\033[1;32m\nEjecutado con éxito para %d proveedores y %d consumidores.\033[0m\n", nProveedores, nProveedores);
+    printf("\033[1;32m\nEjecutado con éxito para %d proveedores y %d consumidores.\033[0m\n", nProveedores, nConsumidores);
     printf("Se ha creado un fichero de nombre \033[1;36m%s\033[0m con los resultados en %s\n\n", argv[2], argv[1]);
 }
 
@@ -414,15 +412,4 @@ int esCadena(char *cadena) {
         }
     }
     return 0; // Devuelve 0 si es una cadena de dígitos
-}
-
-void liberarLista(ConsumidorInfo *nodoP) { // Función para liberar la lista enlazada ahora que ya no se necesita
-    ConsumidorInfo *actual = nodoP;
-    ConsumidorInfo *siguiente;
-
-    while (actual != NULL) {
-        siguiente = actual->siguiente;
-        free(actual);
-        actual = siguiente;
-    }
 }

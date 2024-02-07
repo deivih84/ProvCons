@@ -1,17 +1,3 @@
-Proveedor: 1.
-   Productos procesados: 250.
-   Productos Inválidos: 100.
-   Productos Válidos: 150. De los cuales se han insertado:
-     0 de tipo "a".
-     50 de tipo "b".
-     50 de tipo "c".
-     0 de tipo "d".
-     0 de tipo "e".
-     0 de tipo "f".
-     0 de tipo "g".
-     0 de tipo "h".
-     0 de tipo "i".
-     50 de tipo "j".
 Proveedor: 2.
    Productos procesados: 560.
    Productos Inválidos: 240.
@@ -40,74 +26,88 @@ Proveedor: 0.
      0 de tipo "h".
      0 de tipo "i".
      0 de tipo "j".
-
-Cliente consumidor: 0
-  Productos consumidos: 192. De los cuales:
-     Producto tipo "a": 57
-     Producto tipo "b": 18
-     Producto tipo "c": 23
-     Producto tipo "d": 45
-     Producto tipo "e": 0
-     Producto tipo "f": 0
-     Producto tipo "g": 0
-     Producto tipo "h": 5
-     Producto tipo "i": 8
-     Producto tipo "j": 36
-
-Cliente consumidor: 4
-  Productos consumidos: 68. De los cuales:
-     Producto tipo "a": 16
-     Producto tipo "b": 3
-     Producto tipo "c": 4
-     Producto tipo "d": 32
-     Producto tipo "e": 0
-     Producto tipo "f": 0
-     Producto tipo "g": 0
-     Producto tipo "h": 6
-     Producto tipo "i": 3
-     Producto tipo "j": 4
+Proveedor: 1.
+   Productos procesados: 250.
+   Productos Inválidos: 100.
+   Productos Válidos: 150. De los cuales se han insertado:
+     0 de tipo "a".
+     50 de tipo "b".
+     50 de tipo "c".
+     0 de tipo "d".
+     0 de tipo "e".
+     0 de tipo "f".
+     0 de tipo "g".
+     0 de tipo "h".
+     0 de tipo "i".
+     50 de tipo "j".
 
 Cliente consumidor: 3
-  Productos consumidos: 191. De los cuales:
-     Producto tipo "a": 67
-     Producto tipo "b": 22
-     Producto tipo "c": 16
-     Producto tipo "d": 44
+  Productos consumidos: 106. De los cuales:
+     Producto tipo "a": 35
+     Producto tipo "b": 13
+     Producto tipo "c": 12
+     Producto tipo "d": 23
      Producto tipo "e": 0
      Producto tipo "f": 0
      Producto tipo "g": 0
-     Producto tipo "h": 6
-     Producto tipo "i": 10
-     Producto tipo "j": 26
-
-Cliente consumidor: 1
-  Productos consumidos: 251. De los cuales:
-     Producto tipo "a": 66
-     Producto tipo "b": 23
-     Producto tipo "c": 22
-     Producto tipo "d": 82
-     Producto tipo "e": 0
-     Producto tipo "f": 0
-     Producto tipo "g": 0
-     Producto tipo "h": 14
-     Producto tipo "i": 18
-     Producto tipo "j": 26
+     Producto tipo "h": 4
+     Producto tipo "i": 3
+     Producto tipo "j": 16
 
 Cliente consumidor: 2
-  Productos consumidos: 200. De los cuales:
-     Producto tipo "a": 50
-     Producto tipo "b": 24
-     Producto tipo "c": 25
-     Producto tipo "d": 53
+  Productos consumidos: 47. De los cuales:
+     Producto tipo "a": 13
+     Producto tipo "b": 7
+     Producto tipo "c": 6
+     Producto tipo "d": 16
      Producto tipo "e": 0
      Producto tipo "f": 0
      Producto tipo "g": 0
-     Producto tipo "h": 9
-     Producto tipo "i": 1
-     Producto tipo "j": 38
+     Producto tipo "h": 0
+     Producto tipo "i": 0
+     Producto tipo "j": 5
+
+Cliente consumidor: 0
+  Productos consumidos: 579. De los cuales:
+     Producto tipo "a": 175
+     Producto tipo "b": 44
+     Producto tipo "c": 40
+     Producto tipo "d": 183
+     Producto tipo "e": 0
+     Producto tipo "f": 0
+     Producto tipo "g": 0
+     Producto tipo "h": 32
+     Producto tipo "i": 32
+     Producto tipo "j": 73
+
+Cliente consumidor: 1
+  Productos consumidos: 122. De los cuales:
+     Producto tipo "a": 28
+     Producto tipo "b": 15
+     Producto tipo "c": 18
+     Producto tipo "d": 30
+     Producto tipo "e": 0
+     Producto tipo "f": 0
+     Producto tipo "g": 0
+     Producto tipo "h": 4
+     Producto tipo "i": 5
+     Producto tipo "j": 22
+
+Cliente consumidor: 4
+  Productos consumidos: 48. De los cuales:
+     Producto tipo "a": 5
+     Producto tipo "b": 11
+     Producto tipo "c": 14
+     Producto tipo "d": 4
+     Producto tipo "e": 0
+     Producto tipo "f": 0
+     Producto tipo "g": 0
+     Producto tipo "h": 0
+     Producto tipo "i": 0
+     Producto tipo "j": 14
 
 Total de productos consumidos: 902
      432 del proveedor 0.
      150 del proveedor 1.
      320 del proveedor 2.
-Cliente consumidor que mas ha consumido: 3
+Cliente consumidor que mas ha consumido: 2
