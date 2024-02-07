@@ -49,7 +49,6 @@ typedef struct {
 sem_t semaforoFichero, semContC, semContP, hayEspacio, hayDato, adelanteFacturador, semContProveedorAcabado, semLista;
 Producto *buffer;
 int itProdBuffer = 0, itConsBuffer = 0, contProvsAcabados = 0;
-FILE *ficheroSalida;
 ConsumidorInfo *nodoInicial = NULL, *nodoActual = NULL;
 
 // Declaración de funciones
@@ -67,7 +66,7 @@ int esCadena(char *cadena);
 int main(int argc, char *argv[]) {
     int nConsumidores, nProveedores, tamBuffer;
     char pathDest[255];
-    FILE *fichProveedor;
+    FILE *fichProveedor, *ficheroSalida;
     pthread_t *proveedorThread, *consumidorThread, facturadorThread;
     ArgsProvFact *argsProv;
     ArgsCons *argsCons;
@@ -134,7 +133,7 @@ int main(int argc, char *argv[]) {
 
 
     // PREPARACIÓN DE ARGUMENTOS
-    for (int i = 0; i < nProveedores; i++) {
+    for (int i = 0; i < nProveedores; i++) { // Argumentos Proveedores
         argsProv[i].proveedorID = i;
         argsProv[i].file = ficheroSalida;
         argsProv[i].tamBuffer = tamBuffer;
@@ -142,12 +141,12 @@ int main(int argc, char *argv[]) {
         argsProv[i].nConsumidores = nConsumidores;
 
         sprintf(argsProv[i].pathProv, "%s/proveedor%d.dat", argv[1], i);
-        if ((fichProveedor = fopen(argsProv[i].pathProv, "r")) == NULL) {
+        if ((fichProveedor = fopen(argsProv[i].pathProv, "r")) == NULL) { // Prueba de apertura de los proveedor.dat
             fprintf(stderr, "Error al abrir el archivo de entrada del proveedor %d.\n", 0);
             exit(-1);}
         fclose(fichProveedor);
     }
-    for (int i = 0; i < nConsumidores; i++) {
+    for (int i = 0; i < nConsumidores; i++) { // Argumentos Consumidores
         argsCons[i].consumidorID = i;
         argsCons[i].nProveedores = nProveedores;
         argsCons[i].tamBuffer = tamBuffer;
